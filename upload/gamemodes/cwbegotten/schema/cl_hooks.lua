@@ -696,9 +696,11 @@ function Schema:GetProgressBarInfoAction(action, percentage)
 		return {text = "You are erecting a siege ladder.", percentage = percentage, flash = percentage > 75};
 	elseif (action == "bloodTest") then
 		return {text = "You are testing someone's blood for corruption. Click to cancel.", percentage = percentage, flash = percentage > 75};
-	elseif (action == "hell_teleporting") then
+	elseif (action == "hell_teleport") then
 		return {text = "You are using dark magic to teleport to Hell. Click to cancel.", percentage = percentage, flash = percentage < 10};
-	end;
+	elseif (action == "helljaunting") then
+		return {text = "You are helljaunting away. Click to cancel.", percentage = percentage, flash = percentage < 10};
+	end
 end;
 
 function Schema:PlayerCanSeeDateTime()

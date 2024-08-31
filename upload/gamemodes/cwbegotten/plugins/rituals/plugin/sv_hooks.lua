@@ -914,7 +914,7 @@ function cwRituals:KeyPress(player, key)
 	if (key == IN_ATTACK) then
 		local action = Clockwork.player:GetAction(player);
 		
-		if (action == "ritualing" or action == "hell_teleporting") then
+		if (action == "ritualing" or action == "hell_teleporting" or action == "helljaunting") then
 			Clockwork.player:SetAction(player, nil);
 		end
 	end;
@@ -924,13 +924,13 @@ end;
 function cwRituals:PlayerRagdolled(player, state, ragdoll)
 	local action = Clockwork.player:GetAction(player);
 	
-	if (action == "ritualing" or action == "hell_teleporting") then
+	if (action == "ritualing" or action == "hell_teleporting" or action == "helljaunting") then
 		Clockwork.player:SetAction(player, nil);
 	end
 end;
 
 function cwRituals:ModifyPlayerSpeed(player, infoTable, action)
-	if (action == "ritualing" or action == "hell_teleporting") then
+	if (action == "ritualing" or action == "hell_teleporting" or action == "helljaunting") then
 		infoTable.runSpeed = infoTable.walkSpeed * 0.1;
 		infoTable.walkSpeed = infoTable.walkSpeed * 0.1;
 	end
