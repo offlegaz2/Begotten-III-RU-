@@ -9,6 +9,7 @@ ENT.RagdollOnDeath = true
 ENT.CollisionBounds = Vector(10, 10, 30)
 ENT.BloodColor = BLOOD_COLOR_RED
 ENT.Frightening = true
+ENT.SightFOV = 300
 ENT.SightRange = 500
 
 -- Sounds --
@@ -20,6 +21,7 @@ ENT.ArmorPiercing = 50;
 ENT.SpawnHealth = 40
 ENT.StaminaDamage = 30;
 ENT.XPValue = 50;
+ENT.MaxMultiHit = 1;
 
 -- Regen --
 

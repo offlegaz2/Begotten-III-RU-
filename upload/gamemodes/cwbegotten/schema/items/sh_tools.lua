@@ -236,10 +236,10 @@ local ITEM = Clockwork.item:New();
 	ITEM.uniqueID = "armor_repair_kit";
 	ITEM.cost = 50;
 	ITEM.model = "models/props/de_prodigy/ammo_can_02.mdl";
-	ITEM.weight = 1;
+	ITEM.weight = 3;
 	ITEM.category = "Tools";
 	ITEM.description = "A collection of tools and materials that can easily be used to repair one's armor.";
-	ITEM.iconoverride = "materials/begotten/ui/itemicons/repair_kit.png";
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/repair_kit_armor.png";
 	ITEM.conditionReplenishment = 200;
 	ITEM.stackable = false;
 	
@@ -254,10 +254,10 @@ local ITEM = Clockwork.item:New();
 	ITEM.uniqueID = "firearm_repair_kit";
 	ITEM.cost = 50;
 	ITEM.model = "models/props/de_prodigy/ammo_can_02.mdl";
-	ITEM.weight = 1;
+	ITEM.weight = 3;
 	ITEM.category = "Tools";
 	ITEM.description = "A collection of delicate tools and spare parts that can be used to repair firearms.";
-	ITEM.iconoverride = "materials/begotten/ui/itemicons/repair_kit.png";
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/repair_kit_firearms.png";
 	ITEM.conditionReplenishment = 200;
 	ITEM.stackable = false;
 	
@@ -272,10 +272,10 @@ local ITEM = Clockwork.item:New();
 	ITEM.uniqueID = "weapon_repair_kit";
 	ITEM.cost = 50;
 	ITEM.model = "models/props/de_prodigy/ammo_can_02.mdl";
-	ITEM.weight = 1;
+	ITEM.weight = 3;
 	ITEM.category = "Tools";
 	ITEM.description = "A collection of tools and materials that can easily be used to repair one's melee weapon or shield.";
-	ITEM.iconoverride = "materials/begotten/ui/itemicons/repair_kit.png";
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/repair_kit_melee.png";
 	ITEM.conditionReplenishment = 200;
 	ITEM.stackable = false;
 	
@@ -289,11 +289,11 @@ local ITEM = Clockwork.item:New();
 	ITEM.name = "Engraving Tool";
 	ITEM.uniqueID = "engraving_tool";
 	ITEM.cost = 50;
-	ITEM.model = "models/props_c17/TrapPropeller_Lever.mdl";
+	ITEM.model = "models/items/weapons/blacksmithhammer/bl_hammer.mdl";
 	ITEM.weight = 0.25;
 	ITEM.category = "Tools";
 	ITEM.description = "A small tool that can be used to etch a name into a weapon or shield.";
-	ITEM.iconoverride = "materials/begotten/ui/itemicons/ampoule.png"
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/engraving_tool.png"
 	--ITEM.itemSpawnerInfo = {category = "Junk", rarity = 95};
 	-- Called when a player drops the item.
 	function ITEM:OnDrop(player, position) end;
@@ -328,7 +328,7 @@ local ITEM = Clockwork.item:New();
 			
 			if (target) then
 				if (!target:HasGodMode() and !target.cwObserverMode and !target.possessor) then
-					if (target:GetSharedVar("tied") == 0) then
+					if (target:GetNetVar("tied") == 0) then
 						if (target:GetShootPos():Distance( player:GetShootPos() ) <= 192) then
 							if (target:GetAimVector():DotProduct( player:GetAimVector() ) > 0 or (target:IsRagdolled() and !trace.Entity.cwIsBelongings)) then
 								local faction = player:GetFaction();
@@ -348,7 +348,7 @@ local ITEM = Clockwork.item:New();
 								Clockwork.player:SetAction(player, "tie", tieTime);
 								
 								Clockwork.player:EntityConditionTimer(player, target, trace.Entity, tieTime, 192, function()
-									if (player:Alive() and !player:IsRagdolled() and target:GetSharedVar("tied") == 0 and !target.cwObserverMode and !target.possessor 
+									if (player:Alive() and !player:IsRagdolled() and target:GetNetVar("tied") == 0 and !target.cwObserverMode and !target.possessor 
 									and (target:GetAimVector():DotProduct(player:GetAimVector()) > 0 or (target:IsRagdolled() and !trace.Entity.cwIsBelongings))) then
 										return true;
 									end;
@@ -692,7 +692,7 @@ local ITEM = Clockwork.item:New();
 			local currentCharge = player:GetCharacterData("battery", 0);
 		
 			player:SetCharacterData("battery", math.Clamp(currentCharge + 75, 0, 100));
-			player:SetSharedVar("battery", math.Round(player:GetCharacterData("battery", 0), 0));
+			player:SetNetVar("battery", math.Round(player:GetCharacterData("battery", 0), 0));
 			
 			player.nextChargeDepleted = CurTime() + 120;
 		else
@@ -724,7 +724,7 @@ local ITEM = Clockwork.item:New();
 			if !player.nextWarHorn or player.nextWarHorn <= curTime then
 				player.nextWarHorn = curTime + 5;
 				
-				local faction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
+				local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
 				local playerPos = player:GetPos();
 				local radius = Clockwork.config:Get("talk_radius"):Get() * 4;
 			

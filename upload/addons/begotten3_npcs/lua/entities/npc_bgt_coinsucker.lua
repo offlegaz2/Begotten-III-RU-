@@ -47,6 +47,7 @@ ENT.ClimbUpAnimation = "run_all_grenade" --ACT_ZOMBIE_CLIMB_UP --pull_grenade
 ENT.ClimbOffset = Vector(-14, 0, 0)
 ENT.ArmorPiercing = 25;
 ENT.Damage = 20
+ENT.MaxMultiHit = 1;
 -- Detection --
 ENT.EyeBone = "ValveBiped.Bip01_Spine4"
 ENT.EyeOffset = Vector(7.5, 0, 5)
@@ -67,6 +68,20 @@ ENT.PossessionViews = {
 }
 
 ENT.PossessionBinds = {
+	[IN_JUMP] = {{
+		coroutine = true,
+		onkeydown = function(self)
+			if(!self:IsOnGround()) then return; end
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,700) + self:GetForward() * 100);
+
+			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	}},
+
 	[IN_ATTACK] = {
 		{
 			coroutine = true,
@@ -102,6 +117,7 @@ if SERVER then
 	
 	function ENT:OnParried()
 		self.nextMeleeAttack = CurTime() + 2;
+		self:ResetSequence(ACT_IDLE);
 	end
 	-- Init/Think --
 	function ENT:CustomInitialize()
@@ -208,8 +224,6 @@ if SERVER then
 	end
 	
 	function ENT:OnAnimEvent()
-		local sha = false
-		
 		if self:IsAttacking() and self:GetCycle() > 0.3 then
 			self:Attack({
 				damage = self.Damage,

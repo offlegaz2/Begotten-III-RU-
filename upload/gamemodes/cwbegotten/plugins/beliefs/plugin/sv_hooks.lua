@@ -26,7 +26,7 @@ function cwBeliefs:PlayerRestoreCharacterData(player, data)
 	
 	player:SetLocalVar("experience", data["experience"]);
 	player:SetLocalVar("points", data["points"]);
-	player:SetSharedVar("level", data["level"]);
+	player:SetNetVar("level", data["level"]);
 end
 
 -- Called when a player's character screen info should be adjusted.
@@ -44,7 +44,7 @@ function cwBeliefs:PlayerThink(player, curTime, infoTable, alive, initialized, p
 			local playerFaction = player:GetFaction();
 			
 			if not plyTab.opponent and (table.HasValue(self.residualXPZones, lastZone) or (lastZone == "tower" and ((playerFaction == "Gatekeeper" or playerFaction == "Holy Hierarchy") or residualXPInSafezone == true))) then
-				local residualXP = self.xpValues["residual"] or 5;
+				local residualXP = self.xpValues["residual"] or 1;
 				
 				if playerFaction == "Goreic Warrior" and (lastZone == "wasteland" or lastZone == "tower" or lastZone == "caves" or lastZone == "scrapper") then
 					residualXP = residualXP * 2;
@@ -54,8 +54,28 @@ function cwBeliefs:PlayerThink(player, curTime, infoTable, alive, initialized, p
 					residualXP = residualXP * 2;
 				end
 				
-				if playerFaction == "Gatekeeper" and game.GetMap() == "rp_begotten3" and player:GetPos():WithinAABox(Vector(9422, 11862, -1210), Vector(10055, 10389, -770)) then
-					residualXP = residualXP * 2;
+				local factionTable = Clockwork.faction:FindByID(playerFaction);
+				
+				if factionTable and factionTable.residualXPZones then
+					local residualXPZones = factionTable.residualXPZones[game.GetMap()];
+					
+					if residualXPZones then
+						local playerPos = player:GetPos();
+						
+						for i, v in ipairs(residualXPZones) do
+							if playerPos:WithinAABox(v.pos1, v.pos2) then
+								local modifier = v.modifier or 2;
+								
+								if cwDayNight and v.nightModifier and cwDayNight.currentCycle == "night" then
+									modifier = v.nightModifier or 4;
+								end
+								
+								residualXP = residualXP * modifier;
+							
+								break;
+							end
+						end
+					end
 				end
 
 				player:HandleXP(residualXP);
@@ -75,7 +95,7 @@ function cwBeliefs:PlayerThink(player, curTime, infoTable, alive, initialized, p
 					local playerPos = player:GetPos();
 					
 					for i, v in ipairs(_player.GetAll()) do
-						if v:GetSharedVar("yellowBanner") then
+						if v:GetNetVar("yellowBanner") then
 							if (v:GetPos():Distance(playerPos) <= config.Get("talk_radius"):Get()) then
 								Schema:EasyText(player, "peru", "There is one with a yellow banner raised, dispelling your dark magic! Vanquish them or distance yourself!");
 								Schema:EasyText(v, "peru", "You feel your yellow banner pulsate with energy as the dark magic of "..player:Name().." is foiled and they are uncloaked for all to see!");
@@ -98,7 +118,7 @@ function cwBeliefs:PlayerThink(player, curTime, infoTable, alive, initialized, p
 							local blockedCloak;
 							
 							for i, v in ipairs(_player.GetAll()) do
-								if v:GetSharedVar("yellowBanner") then
+								if v:GetNetVar("yellowBanner") then
 									if (v:GetPos():Distance(playerPos) <= config.Get("talk_radius"):Get()) then
 										blockedCloak = true;
 									
@@ -110,8 +130,10 @@ function cwBeliefs:PlayerThink(player, curTime, infoTable, alive, initialized, p
 							if !blockedCloak then
 								player:Cloak();
 							end
+						elseif (plyTab.cloakCooldown - curTime) > 5 then
+							Schema:EasyText(self.Owner, "chocolate", "You are covered in black powder and cannot cloak for another "..math.ceil(plyTab.cloakCooldown - curTime).." seconds!");
 						else
-							Schema:EasyText(self.Owner, "chocolate", "You are covered in black powder and cannot cloak for "..math.Round(plyTab.cloakCooldown - curTime).." seconds!");
+							Schema:EasyText(self.Owner, "chocolate", "You cannot cloak for another "..math.ceil(plyTab.cloakCooldown - curTime).." seconds!");
 						end
 					end
 				end
@@ -152,11 +174,18 @@ function cwBeliefs:PlayerThink(player, curTime, infoTable, alive, initialized, p
 					if hook.Run("PlayerShouldHealthRegenerate", player) then
 						local maxHealth = player:GetMaxHealth()
 						local health = player:Health()
+						local clothesItem = player:GetClothesEquipped();
 
 						if (health > 0 and health < maxHealth) then
-							player:SetHealth(math.Clamp(
-								health + 1, 0, maxHealth)
-							);
+							if clothesItem and clothesItem.attributes and table.HasValue(clothesItem.attributes, "increased_regeneration") then
+								player:SetHealth(math.Clamp(
+									health + 3, 0, maxHealth)
+								);
+							else
+								player:SetHealth(math.Clamp(
+									health + 1, 0, maxHealth)
+								);
+							end
 						end
 					end
 				end
@@ -202,7 +231,7 @@ function cwBeliefs:BeliefTaken(player, uniqueID, category)
 			local character = player.cwCharacter;
 			
 			character.subfaith = beliefTable.subfaith;
-			player:SetSharedVar("subfaith", beliefTable.subfaith);
+			player:SetNetVar("subfaith", beliefTable.subfaith);
 			
 			player:SaveCharacter();
 		end
@@ -275,7 +304,7 @@ function cwBeliefs:BeliefTaken(player, uniqueID, category)
 				end
 			else]]--
 				for i = level, math.min(level + 6, levelCap) do
-					player:HandleXP(self.sacramentCosts[i] or 666);
+					player:HandleXP(self.sacramentCosts[i] or 666, true);
 				end
 			--end
 		end
@@ -289,9 +318,7 @@ function cwBeliefs:BeliefTaken(player, uniqueID, category)
 	elseif uniqueID == "the_paradox_riddle_equation" then
 		if cwMedicalSystem then
 			player:TakeAllDiseases();
-		end
-	elseif uniqueID == "scribe" then
-		Clockwork.player:GiveFlags(player, "J");
+		end;
 	end
 
 	--local max_poise = player:GetMaxPoise();
@@ -609,52 +636,32 @@ function cwBeliefs:EntityHandleMenuOption(player, entity, option, arguments)
 		elseif (arguments == "cwHarvestBones") then
 			if (!entityPlayer or !entityPlayer:Alive()) then
 				local model = entity:GetModel();
-				
-				if entity:GetNWEntity("Player"):IsPlayer() or entity:GetNWEntity("Player") == game.GetWorld() or table.HasValue(animalModels, model) then
-					local activeWeapon = player:GetActiveWeapon();
-					local offhandWeapon;
+								
+				if (!entity.bones or entity.bones < 4) then
+					entity.bones = (entity.bones or 0) + 1;
 					
-					if IsValid(activeWeapon) then
-						offhandWeapon = activeWeapon:GetOffhand();
+					local instance = Clockwork.item:CreateInstance("human_bone");
+
+					player:GiveItem(instance, true);
+					player:HandleXP(math.Round(self.xpValues["mutilate"] / 2));
+					
+					if model == "models/animals/deer1.mdl" then
+						Clockwork.chatBox:AddInTargetRadius(player, "me", "uses their hands to dig into the flesh of the stag before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
+					elseif model == "models/animals/goat.mdl" then
+						Clockwork.chatBox:AddInTargetRadius(player, "me", "uses their hands to dig into the flesh of the goat before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
+					elseif model == "models/animal_ragd/piratecat_leopard.mdl" then
+						Clockwork.chatBox:AddInTargetRadius(player, "me", "uses their hands to dig into the flesh of the leopard before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
+					elseif model == "models/animals/bear.mdl" then
+						Clockwork.chatBox:AddInTargetRadius(player, "me", "uses their hands to dig into the flesh of the bear before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
+					else
+						Clockwork.chatBox:AddInTargetRadius(player, "me", "uses their hands to dig into the flesh of the body before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
 					end
 					
-					if IsValid(activeWeapon) and activeWeapon.isDagger or offhandWeapon and offhandWeapon.isDagger then
-						if (!entity.bones or entity.bones < 5) then
-							entity.bones = (entity.bones or 0) + 1;
-							
-							local instance = Clockwork.item:CreateInstance("human_bone");
-
-							player:GiveItem(instance, true);
-							player:HandleXP(math.Round(self.xpValues["mutilate"] / 2));
-							
-							if model == "models/animals/deer1.mdl" then
-								Clockwork.chatBox:AddInTargetRadius(player, "me", "strips the flesh of the stag before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
-							elseif model == "models/animals/goat.mdl" then
-								Clockwork.chatBox:AddInTargetRadius(player, "me", "strips the flesh of the goat before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
-							elseif model == "models/animal_ragd/piratecat_leopard.mdl" then
-								Clockwork.chatBox:AddInTargetRadius(player, "me", "strips the flesh of the leopard before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
-							elseif model == "models/animals/bear.mdl" then
-								Clockwork.chatBox:AddInTargetRadius(player, "me", "strips the flesh of the bear before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
-							else
-								Clockwork.chatBox:AddInTargetRadius(player, "me", "strips the flesh of the body before them, harvesting its bones.", player:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
-							end
-							
-							player:EmitSound("npc/barnacle/barnacle_crunch"..math.random(2, 3)..".wav");
-							Clockwork.kernel:CreateBloodEffects(entity:NearestPoint(trace.HitPos), 1, entity);
-							
-							local weaponItemTable = item.GetByWeapon(activeWeapon);
-							
-							if weaponItemTable then
-								if cwBeliefs and not player:HasBelief("ingenuity_finisher") then
-									weaponItemTable:TakeCondition(0.5);
-								end
-							end
-						else
-							Clockwork.player:Notify(player, "This corpse has already been harvested of all its bones!");
-						end;
-					else
-						Clockwork.player:Notify(player, "You must have a dagger equipped in order to harvest the bones of this corpse!");
-					end;
+					player:EmitSound("npc/barnacle/barnacle_crunch"..math.random(2, 3)..".wav");
+					Clockwork.kernel:CreateBloodEffects(entity:NearestPoint(trace.HitPos), 1, entity);
+											
+				else
+					Clockwork.player:Notify(player, "This corpse has already been harvested of all its bones!");
 				end;
 			end;
 		elseif (arguments == "cwCorpseSkin") then
@@ -745,7 +752,7 @@ function cwBeliefs:LockpickFinished(player, entity)
 end
 
 -- Called when a player should take damage.
-function cwBeliefs:PlayerShouldTakeDamage(player, attacker, inflictor, damageInfo)
+function cwBeliefs:PlayerShouldTakeDamage(player, attacker)
 	if (player.distortedRingFired) then
 		return false;
 	end;
@@ -759,6 +766,7 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 	end;
 
 	if entity:IsPlayer() or entity:IsNPC() or entity:IsNextBot() or entity.isTrainingDummy then
+		local entTab = entity:GetTable();
 		local originalDamage = damageInfo:GetDamage() or 0;
 		
 		if originalDamage == 0 then
@@ -847,6 +855,11 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 										for k, v in pairs(ents.FindInSphere(entity:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2)) do
 											if v:IsPlayer() then
 												Clockwork.chatBox:Add(v, attacker, "me", strikeText.." a pressure point of "..Clockwork.player:FormatRecognisedText(v, "%s", entity)..", but their hatred is so strong that they simply refuse to die!");
+												if entity:GetGender() == GENDER_MALE then
+													entity:EmitSound("misc/attack_01.ogg", 90, math.random(55,70))
+												else
+													entity:EmitSound("misc/attack_01.ogg", 90, math.random(100,120))
+												end	
 											end
 										end
 										
@@ -875,13 +888,13 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 											
 											if entTab.opponent then
 												entTab.distortedRingFiredDuel = true;
-											else
-												timer.Simple(0.5, function()
-													if IsValid(entity) then
-														entity.distortedRingFired = nil;
-													end
-												end);
 											end
+											
+											timer.Simple(0.5, function()
+												if IsValid(entity) then
+													entity.distortedRingFired = nil;
+												end
+											end);
 											
 											entity:EmitSound("physics/metal/metal_grate_impact_hard3.wav");
 											entity:Extinguish();
@@ -914,7 +927,6 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 									end
 								end
 
-
 								entity:EmitSound("meleesounds/kill"..math.random(1, 2)..".wav.mp3");
 								
 								local strikeText = "efficiently strikes out at";
@@ -927,7 +939,7 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 									Clockwork.chatBox:AddInTargetRadius(attacker, "me", strikeText.." a pressure point of "..entity:Name()..", snuffing out their Holy Light with dark magic and killing them instantly!", attacker:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
 									
 									entity.soulscorchActive = nil;
-									entity:SetSharedVar("soulscorchActive", false);
+									entity:SetNetVar("soulscorchActive", false);
 									
 									if timer.Exists("SoulScorchTimer_"..entity:EntIndex()) then
 										timer.Remove("SoulScorchTimer_"..entity:EntIndex());
@@ -1140,8 +1152,8 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 				
 				if attacker:HasBelief("taste_of_blood") then
 					if attacker.tasteOfBloodVictim then
-						if timer.Exists("tasteOfBloodTimer") then
-							timer.Destroy("tasteOfBloodTimer");
+						if timer.Exists("tasteOfBloodTimer"..tostring(attacker:EntIndex())) then
+							timer.Destroy("tasteOfBloodTimer"..tostring(attacker:EntIndex()));
 						end
 					
 						if attacker.tasteOfBloodVictim == entity then
@@ -1151,7 +1163,7 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 					
 					attacker.tasteOfBloodVictim = entity;
 					
-					timer.Create("tasteOfBloodTimer", 180, 1, function()
+					timer.Create("tasteOfBloodTimer"..tostring(attacker:EntIndex()), 180, 1, function()
 						if IsValid(attacker) then
 							attacker.tasteOfBloodVictim = nil;
 						end
@@ -1175,7 +1187,7 @@ function cwBeliefs:EntityTakeDamageNew(entity, damageInfo)
 				if (entity:IsPlayer() and entity:Alive()) then
 					local lastZone = attacker:GetCharacterData("LastZone");
 					
-					if cwDayNight and cwDayNight.currentCycle == "night" and lastZone == "wasteland" then
+					if lastZone == "wasteland" and ((cwDayNight and cwDayNight.currentCycle == "night") or (cwWeather and cwWeather.weather == "bloodstorm")) then
 						if cwMedicalSystem and newDamage >= 25 then
 							local rand = math.random(1, 5);
 							
@@ -1285,7 +1297,7 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 					
 					if attackerFactionTable then
 						local playerFaction = entity:GetFaction();
-						local kinisgerOverride = entity:GetSharedVar("kinisgerOverride");
+						local kinisgerOverride = entity:GetNetVar("kinisgerOverride");
 						
 						if kinisgerOverride and attackerFaction ~= "Children of Satan" then
 							playerFaction = kinisgerOverride;
@@ -1353,7 +1365,7 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 			local clothesItem = attacker:GetClothesEquipped();
 			
 			if clothesItem and clothesItem.attributes and table.HasValue(clothesItem.attributes, "solblessed") then
-				local hatred = math.min(attacker:GetNetVar("Hatred", 0) + (math.min(entity:Health(), math.Round(damage / 2))), 100);
+				local hatred = math.min(attacker:GetNetVar("Hatred", 0) + (math.min(entity:Health(), math.Round(damage / 1.5))), 100);
 				
 				if !attacker.opponent then
 					attacker:SetCharacterData("Hatred", hatred);
@@ -1367,7 +1379,7 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 			local clothesItem = entity:GetClothesEquipped();
 			
 			if clothesItem and clothesItem.attributes and table.HasValue(clothesItem.attributes, "solblessed") then
-				local hatred = math.min(entity:GetNetVar("Hatred", 0) + (math.min(entity:Health(), math.Round(damage / 2))), 100);
+				local hatred = math.min(entity:GetNetVar("Hatred", 0) + (math.min(entity:Health(), math.Round(damage / 1.5))), 100);
 				
 				if !entTab.opponent then
 					entity:SetCharacterData("Hatred", hatred);
@@ -1375,6 +1387,12 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 				
 				entity:SetLocalVar("Hatred", hatred);
 			end
+		end
+		
+		local action = Clockwork.player:GetAction(entity);
+		
+		if action == "reloading" or action == "heal" or action == "healing" or action == "pickupragdoll" then
+			Clockwork.player:ExtendAction(entity, 1);
 		end
 	end
 
@@ -1392,7 +1410,11 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 					entity:Extinguish();
 
 					Clockwork.chatBox:AddInTargetRadius(entity, "me", "'s hatred is so strong that they simply refuse to die yet!", entity:GetPos(), config.Get("talk_radius"):Get() * 2);
-					
+					if entity:GetGender() == GENDER_MALE then
+						entity:EmitSound("misc/attack_01.ogg", 90, math.random(55,70))
+					else
+						entity:EmitSound("misc/attack_01.ogg", 90, math.random(100,120))
+					end					
 					if cwMedicalSystem then
 						entTab.nextBleedPoint = CurTime() + 180;
 					end
@@ -1421,14 +1443,14 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 					
 					if entTab.opponent then
 						entTab.distortedRingFiredDuel = true;
-					else
-						timer.Simple(0.5, function()
-							if IsValid(entity) then
-								entity.distortedRingFired = nil;
-							end
-						end);
 					end
 					
+					timer.Simple(0.5, function()
+						if IsValid(entity) then
+							entity.distortedRingFired = nil;
+						end
+					end);
+
 					entity:EmitSound("physics/metal/metal_grate_impact_hard3.wav");
 					entity:Extinguish();
 					
@@ -1464,6 +1486,8 @@ function cwBeliefs:FuckMyLife(entity, damageInfo)
 							--if (bloodLevel <= self.lethalBloodLoss) then
 								entity:DeathCauseOverride("Bled out in a puddle of their own blood.");
 								entity:Kill();
+								
+								Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, entity:Name().." has bled out!")
 								--entity:TakeDamage(99999, entity, entity);
 								--entity:SetCrouchedWalkSpeed(1);
 							--[[else
@@ -1578,15 +1602,19 @@ function cwBeliefs:DoPlayerDeathPreDeathSound(player, attacker, damageInfo)
 					
 					if gender == GENDER_FEMALE then
 						player:SetModel("models/begotten/heads/female_gorecap.mdl");
+						player:SetBodygroup(0, 0);
 						
 						if IsValid(ragdollEntity) then
 							ragdollEntity:SetModel("models/begotten/heads/female_gorecap.mdl");
+							ragdollEntity:SetBodygroup(0, 0);
 						end
 					else
 						player:SetModel("models/begotten/heads/male_gorecap.mdl");
+						player:SetBodygroup(0, 0);
 						
 						if IsValid(ragdollEntity) then
 							ragdollEntity:SetModel("models/begotten/heads/male_gorecap.mdl");
+							ragdollEntity:SetBodygroup(0, 0);
 						end
 					end
 					
@@ -1647,349 +1675,347 @@ function cwBeliefs:PlayerExitedDuel(player)
 	end
 end
 
+function cwBeliefs:PrePlayerCharacterCreated(player, character)
+	local data = character.data or {};
+	local inventory = character.inventory;
+	local faction = character.faction;
+	local subfaction = character.subfaction;
+	local traits = data["Traits"] or {};
+	local level = 1;
+	
+	data["beliefs"] = {};
+	
+	if faction == "Children of Satan" then
+		if subfaction == "Kinisger" or subfaction == "Philimaxio" then
+			level = level + 6;
+		elseif subfaction == "Varazdat" then
+			level = level + 5;
+			data["beliefs"]["savage"] = true;
+			data["beliefs"]["heart_eater"] = true;
+		elseif subfaction == "Rekh-khet-sa" then
+			level = level + 16;
+			data["beliefs"]["primevalism"] = true;
+			character.subfaith = "Primevalism";
+		end
+	elseif faction == "Gatekeeper" then
+		if subfaction == "Auxiliary" then
+			level = level + 11;
+		elseif subfaction == "Praeventor" then
+			level = level + 7;
+		else
+			level = level + 5;
+		end
+	elseif faction == "Goreic Warrior" then
+		if subfaction == "Clan Gore" or subfaction == "Clan Shagalax" then
+			level = level + 7;
+			
+			if subfaction == "Clan Shagalax" then
+				data["beliefs"]["ingenious"] = true;
+				data["beliefs"]["craftsman"] = true;
+				data["beliefs"]["smith"] = true;
+			end
+		elseif subfaction == "Clan Crast" then
+			level = level + 11;
+		elseif subfaction == "Clan Reaver" or subfaction == "Clan Harald" then
+			level = level + 5;
+		elseif subfaction == "Clan Grock" then
+			level = level + 7;
+		end
+	elseif faction == "Pope Adyssa's Gatekeepers" then
+		level = level + 15;
+	elseif faction == "Holy Hierarchy" then
+		level = level + 10;
+	elseif faction == "The Third Inquisition" then
+		level = level + 19;
+	elseif faction == "Smog City Pirate" then
+		if subfaction == "Machinists" then
+			level = level + 7;
+		elseif subfaction == "Voltists" then
+			level = level + 10;
+			data["beliefs"]["voltism"] = true;
+			character.subfaith = "Voltism";
+		end
+	end
+	
+	if (table.HasValue(traits, "criminal")) then
+		level = level + 3;
+		data["beliefs"]["nimble"] = true;
+		data["beliefs"]["sly_fidget"] = true;
+		data["beliefs"]["safecracker"] = true;
+
+		Clockwork.inventory:AddInstance(inventory, item.CreateInstance("lockpick"));
+		Clockwork.inventory:AddInstance(inventory, item.CreateInstance("lockpick"));
+	end
+	
+	if (table.HasValue(traits, "favored")) then
+		level = level + 3;
+		data["beliefs"]["fortunate"] = true;
+		data["beliefs"]["lucky"] = true;
+		data["beliefs"]["favored"] = true;
+	end
+	
+	if (table.HasValue(traits, "nimble")) then
+		level = level + 3;
+		data["beliefs"]["nimble"] = true;
+		data["beliefs"]["evasion"] = true;
+		data["beliefs"]["dexterity"] = true;
+	end;
+	
+	if (table.HasValue(traits, "brawny")) then
+		level = level + 3;
+		data["beliefs"]["fighter"] = true;
+		data["beliefs"]["strength"] = true;
+		data["beliefs"]["might"] = true;
+	end;
+	
+	if table.HasValue(traits, "duelist") then
+		level = level + 3;
+		data["beliefs"]["fighter"] = true;
+		data["beliefs"]["parrying"] = true;
+		data["beliefs"]["deflection"] = true;
+	end
+	
+	if table.HasValue(traits, "vigorous") then
+		level = level + 3;
+		data["beliefs"]["believers_perseverance"] = true;
+		data["beliefs"]["plenty_to_spill"] = true;
+		data["beliefs"]["unyielding"] = true;
+	end
+	
+	if (table.HasValue(traits, "cannibal")) then
+		level = level + 1;
+		data["beliefs"]["savage"] = true;
+	end;
+	
+	if table.HasValue(traits, "shrewd") then
+		level = level + 3;
+		data["beliefs"]["ingenious"] = true;
+		data["beliefs"]["craftsman"] = true;
+		data["beliefs"]["mechanic"] = true;
+	end
+	
+	if table.HasValue(traits, "scribe") then
+		level = level + 2;
+		data["beliefs"]["literacy"] = true;
+		data["beliefs"]["scribe"] = true;
+	elseif table.HasValue(traits, "literate") then
+		level = level + 1;
+		data["beliefs"]["literacy"] = true;
+	end
+	
+	if table.HasValue(traits, "gunslinger") then
+		level = level + 3;
+		data["beliefs"]["ingenious"] = true;
+		data["beliefs"]["powder_and_steel"] = true;
+		
+		local random_ammos = {--[["grapeshot",]] "pop-a-shot"};
+		local peppershot = Clockwork.item:CreateInstance("begotten_peppershot");
+			
+		if peppershot then
+			peppershot:SetCondition(math.random(60, 80));
+			
+			Clockwork.inventory:AddInstance(inventory, peppershot);
+		end
+		
+		for i = 1, math.random(3, 4) do
+			Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance(random_ammos[math.random(1, #random_ammos)]));
+		end
+	end
+	
+	if table.HasValue(traits, "escapee") then
+		data["tied"] = true;
+	end
+	
+	if (table.HasValue(traits, "survivalist")) then
+		level = level + 5;
+		
+		local random_consumables = {};
+		local random_melees = {};
+		
+		if faction == "Goreic Warrior" then
+			random_consumables = {"cooked_deer_meat", "cooked_goat_meat", "crafted_bandage"};
+			random_melees = {"begotten_1h_goremace", "begotten_dagger_gorehuntingdagger", "begotten_spear_harpoon", "begotten_2h_great_club"};
+		else
+			random_consumables = {"skintape", "can_of_beans", "moldy_bread", "dirtywater", "crafted_bandage"};
+			random_melees = {"begotten_1h_bat", "begotten_1h_board", "begotten_1h_brokensword", "begotten_spear_harpoon", "begotten_2h_great_club", "begotten_2h_quarterstaff", "begotten_dagger_quickshank", "begotten_1h_pipe"};
+		end
+		
+		local random_melee = Clockwork.item:CreateInstance(random_melees[math.random(1, #random_melees)]);
+			
+		if random_melee then
+			random_melee:SetCondition(math.random(40, 70));
+			
+			Clockwork.inventory:AddInstance(inventory, random_melee);
+		end
+		
+		for i = 1, math.random(2, 4) do
+			Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance(random_consumables[math.random(1, #random_consumables)]));
+		end
+	end;
+	
+	if table.HasValue(traits, "veteran") then
+		level = level + 4;
+		data["beliefs"]["fighter"] = true;
+		data["beliefs"]["halfsword_sway"] = true;
+		data["beliefs"]["blademaster"] = true;
+		data["beliefs"]["billman"] = true;
+		
+		--local random_armors = {};
+		local random_melees = {};
+		local random_shields = {};
+		
+		if faction == "Goreic Warrior" then
+			--random_armors = {"gore_chainmail", "gore_warfighter_armor"};
+			random_melees = {"begotten_spear_ironshortspear", "begotten_1h_goremace", "begotten_1h_goreshortsword"}
+			random_shields = {"shield5"};
+		else
+			--random_armors = {"light_brigandine_armor", "wanderer_mail"};
+			random_melees = {"begotten_spear_ironshortspear", "begotten_1h_scrapaxe", "begotten_1h_scrapblade"};
+			random_shields = {"shield1", "shield5"};
+		end
+		
+		--local random_armor = Clockwork.item:CreateInstance(random_armors[math.random(1, #random_armors)]);
+		local random_melee = Clockwork.item:CreateInstance(random_melees[math.random(1, #random_melees)]);
+		local random_shield = Clockwork.item:CreateInstance(random_shields[math.random(1, #random_shields)]);
+			
+		--[[if random_armor then
+			random_armor:SetCondition(math.random(40, 60));
+			
+			Clockwork.inventory:AddInstance(inventory, random_armor);
+		end]]--
+			
+		if random_melee then
+			random_melee:SetCondition(math.random(40, 60));
+			
+			Clockwork.inventory:AddInstance(inventory, random_melee);
+		end
+		
+		if random_shield then
+			random_shield:SetCondition(math.random(40, 60));
+			
+			Clockwork.inventory:AddInstance(inventory, random_shield);
+		end
+	end
+	
+	if (table.HasValue(traits, "scavenger")) then
+		Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance("breakdown_kit"));
+	end
+	
+	if (table.HasValue(traits, "miner")) then
+		local pickaxe = Clockwork.item:CreateInstance("begotten_2h_great_pickaxe");
+		local lantern = Clockwork.item:CreateInstance("cw_lantern");
+	
+		pickaxe:SetCondition(math.random(40, 70));
+		lantern:SetData("oil", 60);
+	
+		Clockwork.inventory:AddInstance(inventory, pickaxe);
+		Clockwork.inventory:AddInstance(inventory, lantern);
+		--Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance("large_oil"));
+	end
+	
+	if (table.HasValue(traits, "logger")) then
+		local hatchet = Clockwork.item:CreateInstance("begotten_1h_hatchet");
+		
+		hatchet:SetCondition(math.random(40, 70));
+	
+		Clockwork.inventory:AddInstance(inventory, hatchet);
+	end
+	
+	if table.HasValue(traits, "pious") then
+		level = level + 1;
+	end
+	
+	if (table.HasValue(traits, "zealous")) then
+		level = level + 5;
+		--points = points + 3;
+		data["beliefs"]["prudence"] = true;
+		data["beliefs"]["saintly_composure"] = true;
+	end;
+	
+	if cwCharacterNeeds and table.HasValue(traits, "exhausted") then
+		data["hunger"] = math.random(50, 70);
+		data["sleep"] = math.random(50, 70);
+		data["thirst"] = math.random(50, 70);
+	end
+	
+	if cwMedicalSystem and table.HasValue(traits, "wounded") then
+		local wound_applied = false;
+		
+		if !data["Injuries"] then
+			data["Injuries"] = {};
+		end
+		
+		if !data["BleedingLimbs"] then
+			data["BleedingLimbs"] = {};
+		end
+		
+		for i = 1, 7 do
+			if !data["Injuries"][i] then
+				data["Injuries"][i] = {};
+			end
+			
+			if math.random(1, 4) == 1 or (i == 7 and !wound_applied) then
+				if (i < 8 and i > 3) and math.random(1, 6) == 1 then
+					data["Injuries"][i]["broken_bone"] = true;
+				elseif math.random(1, 4) == 1 then
+					data["Injuries"][i]["burn"] = true;
+				else
+					data["Injuries"][i]["gash"] = true;
+					
+					data["BleedingLimbs"][Clockwork.limb.hitgroupToString[i]] = true;
+				end
+				
+				if !data["LimbData"] then
+					data["LimbData"] = {};
+				end
+				
+				data["LimbData"][i] = math.random(25, 60);
+				
+				wound_applied = true;
+			end
+		end
+		
+		data["Health"] = math.random(50, 75);
+	end
+	
+	-- FOR MELEE TEST ONLY
+	if melee_test_enabled == true then
+		if not player:HasBelief("fighter") then
+			data["beliefs"]["fighter"] = true;
+			data["beliefs"]["halfsword_sway"] = true;
+			data["beliefs"]["parrying"] = true;
+			data["beliefs"]["deflection"] = true;
+			data["beliefs"]["strength"] = true;
+			
+			level = level + 5;
+		else
+			data["beliefs"]["halfsword_sway"] = true;
+			data["beliefs"]["parrying"] = true;
+			data["beliefs"]["deflection"] = true;
+			
+			level = level + 3;
+		end
+		
+		data["beliefs"]["defender"] = true;
+		data["beliefs"]["hauberk"] = true;
+		
+		level = level + 2;
+	end
+	
+	local points = level - 1;
+	
+	for k, v in pairs(data["beliefs"]) do
+		if v then points = points - 1 end;
+	end
+	
+	data["points"] = points;
+	data["level"] = level;
+end
+
 function cwBeliefs:PostPlayerCharacterLoaded(player)
-	local playerBeliefsSetup = player:GetCharacterData("beliefsSetup");
 	local playerLevel = player:GetCharacterData("level", 1);
 	
-	player:SetSharedVar("level", playerLevel);
-
-	if playerBeliefsSetup ~= true then
-		local level = 1;
-		--local points = 0;
-		local faction = player:GetFaction();
-		local subfaction = player:GetSubfaction();
-		
-		if faction == "Children of Satan" then
-			if subfaction == "Kinisger" or subfaction == "Philimaxio" then
-				level = level + 6;
-			elseif subfaction == "Varazdat" then
-				level = level + 5;
-				self:ForceTakeBelief(player, "savage");
-				self:ForceTakeBelief(player, "heart_eater");
-			elseif subfaction == "Rekh-khet-sa" then
-				level = level + 16;
-				self:ForceTakeBelief(player, "primevalism");
-			end
-		elseif faction == "Gatekeeper" then
-			if subfaction == "Auxiliary" then
-				level = level + 11;
-			elseif subfaction == "Praeventor" then
-				level = level + 7;
-			else
-				level = level + 5;
-			end
-		elseif faction == "Goreic Warrior" then
-			if subfaction == "Clan Gore" or subfaction == "Clan Shagalax" then
-				level = level + 7;
-				
-				if subfaction == "Clan Shagalax" then
-					self:ForceTakeBelief(player, "ingenious");
-					self:ForceTakeBelief(player, "craftsman");
-					self:ForceTakeBelief(player, "smith");
-				end
-			elseif subfaction == "Clan Crast" then
-				level = level + 11;
-			elseif subfaction == "Clan Reaver" or subfaction == "Clan Harald" then
-				level = level + 5;
-			elseif subfaction == "Clan Grock" then
-				level = level + 7;
-			end
-		elseif faction == "Pope Adyssa's Gatekeepers" then
-			level = level + 15;
-		elseif faction == "Holy Hierarchy" then
-			level = level + 10;
-		elseif faction == "The Third Inquisition" then
-			level = level + 19;
-		elseif faction == "Smog City Pirate" then
-			if subfaction == "Machinists" then
-				level = level + 7;
-			elseif subfaction == "Voltists" then
-				level = level + 10;
-				self:ForceTakeBelief(player, "voltism");
-			end
-		end
-		
-		if (player:HasTrait("criminal")) then
-			level = level + 3;
-			self:ForceTakeBelief(player, "nimble");
-			self:ForceTakeBelief(player, "sly_fidget");
-			self:ForceTakeBelief(player, "safecracker");
-			
-			local inventory = player:GetInventory();
-			
-			Clockwork.inventory:AddInstance(inventory, item.CreateInstance("lockpick"));
-			Clockwork.inventory:AddInstance(inventory, item.CreateInstance("lockpick"));
-		end
-		
-		if (player:HasTrait("favored")) then
-			level = level + 3;
-			self:ForceTakeBelief(player, "fortunate");
-			self:ForceTakeBelief(player, "lucky");
-			self:ForceTakeBelief(player, "favored");
-		end
-		
-		if (player:HasTrait("nimble")) then
-			level = level + 3;
-			self:ForceTakeBelief(player, "nimble");
-			self:ForceTakeBelief(player, "dexterity");
-			self:ForceTakeBelief(player, "swift");
-		end;
-		
-		if (player:HasTrait("brawny")) then
-			level = level + 3;
-			self:ForceTakeBelief(player, "fighter");
-			self:ForceTakeBelief(player, "strength");
-			self:ForceTakeBelief(player, "might");
-		end;
-		
-		if player:HasTrait("duelist") then
-			level = level + 3;
-			self:ForceTakeBelief(player, "fighter");
-			self:ForceTakeBelief(player, "parrying");
-			self:ForceTakeBelief(player, "deflection");
-		end
-		
-		if player:HasTrait("vigorous") then
-			level = level + 3;
-			self:ForceTakeBelief(player, "believers_perseverance");
-			self:ForceTakeBelief(player, "plenty_to_spill");
-			self:ForceTakeBelief(player, "unyielding");
-			
-			player:SetHealth(player:Health() + 25);
-		end
-		
-		if (player:HasTrait("cannibal")) then
-			level = level + 1;
-			self:ForceTakeBelief(player, "savage");
-		end;
-		
-		if player:HasTrait("shrewd") then
-			level = level + 3;
-			self:ForceTakeBelief(player, "ingenious");
-			self:ForceTakeBelief(player, "craftsman");
-			self:ForceTakeBelief(player, "mechanic");
-		end
-		
-		if player:HasTrait("scribe") then
-			level = level + 2;
-			self:ForceTakeBelief(player, "literacy");
-			self:ForceTakeBelief(player, "scribe");
-		elseif player:HasTrait("literate") then
-			level = level + 1;
-			self:ForceTakeBelief(player, "literacy");
-		end
-		
-		if player:HasTrait("gunslinger") then
-			level = level + 3;
-			self:ForceTakeBelief(player, "ingenious");
-			self:ForceTakeBelief(player, "powder_and_steel");
-			
-			local inventory = player:GetInventory();
-			local random_ammos = {--[["grapeshot",]] "pop-a-shot"};
-			
-			local peppershot = Clockwork.item:CreateInstance("begotten_peppershot");
-				
-			if peppershot then
-				peppershot:SetCondition(math.random(60, 80));
-				
-				Clockwork.inventory:AddInstance(inventory, peppershot);
-			end
-			
-			for i = 1, math.random(3, 4) do
-				Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance(random_ammos[math.random(1, #random_ammos)]));
-			end
-		end
-		
-		if player:HasTrait("escapee") then
-			timer.Simple(0.1, function()
-				if IsValid(player) then
-					Schema:TiePlayer(player, true);
-				end
-			end);
-		end
-		
-		if (player:HasTrait("survivalist")) then
-			level = level + 5;
-			
-			local inventory = player:GetInventory();
-			local random_consumables = {};
-			local random_melees = {};
-			
-			if faction == "Goreic Warrior" then
-				random_consumables = {"cooked_deer_meat", "cooked_goat_meat", "crafted_bandage"};
-				random_melees = {"begotten_1h_goremace", "begotten_dagger_gorehuntingdagger", "begotten_spear_harpoon", "begotten_2h_great_club"};
-			else
-				random_consumables = {"skintape", "can_of_beans", "moldy_bread", "dirtywater", "crafted_bandage"};
-				random_melees = {"begotten_1h_bat", "begotten_1h_board", "begotten_1h_brokensword", "begotten_spear_harpoon", "begotten_2h_great_club", "begotten_2h_quarterstaff", "begotten_dagger_quickshank", "begotten_1h_pipe"};
-			end
-			
-			local random_melee = Clockwork.item:CreateInstance(random_melees[math.random(1, #random_melees)]);
-				
-			if random_melee then
-				random_melee:SetCondition(math.random(40, 70));
-				
-				Clockwork.inventory:AddInstance(inventory, random_melee);
-			end
-			
-			for i = 1, math.random(2, 4) do
-				Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance(random_consumables[math.random(1, #random_consumables)]));
-			end
-		end;
-		
-		if player:HasTrait("veteran") then
-			level = level + 4;
-			self:ForceTakeBelief(player, "fighter");
-			self:ForceTakeBelief(player, "halfsword_sway");
-			self:ForceTakeBelief(player, "blademaster");
-			self:ForceTakeBelief(player, "billman");
-			
-			local inventory = player:GetInventory();
-			--local random_armors = {};
-			local random_melees = {};
-			local random_shields = {};
-			
-			if faction == "Goreic Warrior" then
-				--random_armors = {"gore_chainmail", "gore_warfighter_armor"};
-				random_melees = {"begotten_spear_ironspear", "begotten_1h_goremace", "begotten_1h_goreshortsword", "begotten_1h_ironarmingsword", "begotten_1h_ironshortsword"}
-				random_shields = {"shield5"};
-			else
-				--random_armors = {"light_brigandine_armor", "wanderer_mail"};
-				random_melees = {"begotten_spear_ironspear", "begotten_1h_ironarmingsword", "begotten_1h_ironshortsword", "begotten_1h_morningstar", "begotten_1h_scrapblade"};
-				random_shields = {"shield1", "shield5"};
-			end
-			
-			--local random_armor = Clockwork.item:CreateInstance(random_armors[math.random(1, #random_armors)]);
-			local random_melee = Clockwork.item:CreateInstance(random_melees[math.random(1, #random_melees)]);
-			local random_shield = Clockwork.item:CreateInstance(random_shields[math.random(1, #random_shields)]);
-				
-			--[[if random_armor then
-				random_armor:SetCondition(math.random(40, 60));
-				
-				Clockwork.inventory:AddInstance(inventory, random_armor);
-			end]]--
-				
-			if random_melee then
-				random_melee:SetCondition(math.random(40, 60));
-				
-				Clockwork.inventory:AddInstance(inventory, random_melee);
-			end
-			
-			if random_shield then
-				random_shield:SetCondition(math.random(40, 60));
-				
-				Clockwork.inventory:AddInstance(inventory, random_shield);
-			end
-		end
-		
-		if (player:HasTrait("scavenger")) then
-			local inventory = player:GetInventory();
-		
-			Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance("breakdown_kit"));
-		end
-		
-		if (player:HasTrait("miner")) then
-			local inventory = player:GetInventory();
-			local pickaxe = Clockwork.item:CreateInstance("begotten_2h_great_pickaxe");
-			local lantern = Clockwork.item:CreateInstance("cw_lantern");
-		
-			pickaxe:SetCondition(math.random(40, 70));
-			lantern:SetData("oil", 60);
-		
-			Clockwork.inventory:AddInstance(inventory, pickaxe);
-			Clockwork.inventory:AddInstance(inventory, lantern);
-			--Clockwork.inventory:AddInstance(inventory, Clockwork.item:CreateInstance("large_oil"));
-		end
-		
-		if (player:HasTrait("logger")) then
-			local inventory = player:GetInventory();
-			local hatchet = Clockwork.item:CreateInstance("begotten_1h_hatchet");
-			
-			hatchet:SetCondition(math.random(40, 70));
-		
-			Clockwork.inventory:AddInstance(inventory, hatchet);
-		end
-		
-		if player:HasTrait("pious") then
-			level = level + 1;
-		end
-		
-		if (player:HasTrait("zealous")) then
-			level = level + 5;
-			--points = points + 3;
-			self:ForceTakeBelief(player, "prudence");
-			self:ForceTakeBelief(player, "saintly_composure");
-		end;
-		
-		if cwCharacterNeeds and player:HasTrait("exhausted") then
-			player:SetNeed("hunger", math.random(50, 80));
-			player:SetNeed("sleep", math.random(50, 80));
-			player:SetNeed("thirst", math.random(50, 80));
-		end
-		
-		if cwMedicalSystem and player:HasTrait("wounded") then
-			local hp = player:Health();
-			local wound_applied = false;
-			
-			for i = 1, 7 do
-				if math.random(1, 4) == 1 or (i == 7 and !wound_applied) then
-					if (i < 8 and i > 3) and math.random(1, 6) == 1 then
-						player:AddInjury(i, "broken_bone")
-					elseif math.random(1, 4) == 1 then
-						player:AddInjury(i, "burn");
-					else
-						player:AddInjury(i, "gash");
-						player:StartBleeding(i);
-					end
-					
-					Clockwork.limb:TakeDamage(player, i, math.random(40, 75));
-					
-					wound_applied = true;
-				end
-			end
-			
-			player:SetHealth(math.max(player:Health() - math.random(25, 40), 1));
-		end
-		
-		-- Remove taste of blood effect.
-		for i, v in ipairs(_player.GetAll()) do
-			if v.tasteOfBloodVictim and v.tasteOfBloodVictim == player then
-				v.tasteOfBloodVictim = nil;
-				
-				netstream.Start(v, "TasteofBloodHighlight", nil);
-			end
-		end
-		
-		-- FOR MELEE TEST ONLY
-		if melee_test_enabled == true then
-			if not player:HasBelief("fighter") then
-				self:ForceTakeBelief(player, "fighter");
-				self:ForceTakeBelief(player, "halfsword_sway");
-				self:ForceTakeBelief(player, "parrying");
-				self:ForceTakeBelief(player, "deflection");
-				self:ForceTakeBelief(player, "strength");
-				
-				level = level + 5;
-			else
-				self:ForceTakeBelief(player, "halfsword_sway");
-				self:ForceTakeBelief(player, "parrying");
-				self:ForceTakeBelief(player, "deflection");
-				
-				level = level + 3;
-			end
-			
-			self:ForceTakeBelief(player, "defender");
-			--self:ForceTakeBelief(player, "warden");
-			self:ForceTakeBelief(player, "hauberk");
-			
-			level = level + 2;
-		end
-		
-		if level > 1 then
-			player:SetSacramentLevel(level);
-		end
-		
-		player:SetCharacterData("beliefsSetup", true);
-	end
+	player:SetNetVar("level", playerLevel);
 	
 	if player.poisonTicks then
 		player.poisonTicks = nil;
@@ -2002,6 +2028,15 @@ function cwBeliefs:PostPlayerCharacterLoaded(player)
 		
 		if timer.Exists("DecapitationBuffTimer_"..entIndex) then
 			timer.Remove("DecapitationBuffTimer_"..entIndex);
+		end
+	end
+	
+	-- Remove taste of blood effect.
+	for i, v in ipairs(_player.GetAll()) do
+		if v.tasteOfBloodVictim and v.tasteOfBloodVictim == player then
+			v.tasteOfBloodVictim = nil;
+			
+			netstream.Start(v, "TasteofBloodHighlight", nil);
 		end
 	end
 
@@ -2021,10 +2056,17 @@ end;
 function cwBeliefs:PlayerDeath(player, inflictor, attacker, damageInfo)
 	if IsValid(attacker) and attacker:IsPlayer() and not player.opponent and not attacker.opponent then
 		if attacker:HasBelief("brutality_finisher") then
-			attacker:SetHealth(attacker:GetMaxHealth());
-			attacker:SetCharacterData("Stamina", attacker:GetMaxStamina());
-			--attacker:SetNWInt("meleeStamina", attacker:GetMaxPoise());
-			attacker:SetNWInt("stability", attacker:GetMaxStability());
+			local playerLevel = player:GetCharacterData("level", 1);
+			local refundPerLevel = 0.035;
+			local maxHealth = attacker:GetMaxHealth();
+			local maxStamina = attacker:GetMaxStamina();
+			--local maxPoise = attacker:GetMaxPoise();
+			local maxStability = attacker:GetMaxStability();
+			
+			attacker:SetHealth(math.min(maxHealth, attacker:Health() + ((maxHealth * refundPerLevel) * playerLevel)));
+			attacker:SetCharacterData("Stamina", math.min(maxStamina, attacker:GetCharacterData("Stamina", 90) + ((maxStamina * refundPerLevel) * playerLevel)));
+			--attacker:SetNWInt("meleeStamina", math.min(maxPoise, attacker:GetNWInt("meleeStamina", 90) + ((maxPoise * refundPerLevel) * playerLevel)));
+			attacker:SetNWInt("stability", math.min(maxStability, attacker:GetNWInt("stability", 100) + ((maxStability * refundPerLevel) * playerLevel)));
 			
 			attacker:ScreenFade(SCREENFADE.OUT, Color(100, 20, 20, 80), 0.2, 0.1);
 			
@@ -2041,7 +2083,7 @@ function cwBeliefs:PlayerDeath(player, inflictor, attacker, damageInfo)
 			
 			if attackerFactionTable then
 				local playerFaction = player:GetFaction();
-				local kinisgerOverride = player:GetSharedVar("kinisgerOverride");
+				local kinisgerOverride = player:GetNetVar("kinisgerOverride");
 				
 				if kinisgerOverride and attackerFaction ~= "Children of Satan" then
 					playerFaction = kinisgerOverride;
@@ -2098,6 +2140,16 @@ function cwBeliefs:PlayerDeath(player, inflictor, attacker, damageInfo)
 	end
 end
 
+function cwBeliefs:PlayerDisconnected(player)
+	if player.warCryVictims then
+		for i, victim in ipairs(player.warCryVictims) do
+			if IsValid(victim) then
+				hook.Run("RunModifyPlayerSpeed", victim, victim.cwInfoTable, true);
+			end
+		end
+	end
+end
+
 function cwBeliefs:GetMaxStamina(player, max_stamina)
 	local new_stamina = max_stamina;
 	
@@ -2126,27 +2178,6 @@ function cwBeliefs:ModifyStaminaDrain(player, drainTab)
 	if player:HasBelief("outlasting") then
 		drainTab.decrease = drainTab.decrease * 0.75;
 	end
-end
-
--- A function to get the maximum weight a player can carry.
-function cwBeliefs:PlayerAdjustMaxWeight(player, weight)
-	local new_weight = weight;
-	
-	if player:HasBelief("might") then
-		new_weight = new_weight + (weight * 0.5);
-	end
-	
-	if player:HasBelief("prowess_finisher") then
-		new_weight = new_weight + (weight * 0.5);
-	end
-	
-	if player.GetCharmEquipped and player:GetCharmEquipped("spine_soldier") then
-		new_weight = new_weight + (weight * 0.25);
-	end
-	
-	weight = math.Round(new_weight);
-	
-	return weight;
 end
 
 -- Called when a player attempts to use an item.
@@ -2213,29 +2244,20 @@ function cwBeliefs:ModifyPlayerSpeed(player, infoTable)
 	end
 	
 	if player:HasBelief("purity_afloat") then
-		if not clothesItem or (clothesItem and (clothesItem.weightclass ~= "Heavy")) then
-			local cash = player:GetCash();
 			local health = player:Health();
 			local maxHealth = player:GetMaxHealth();
 			local lowerBound = maxHealth * 0.25;
 			local modifier = math.Clamp(-(((health - lowerBound) / (maxHealth - lowerBound)) - 1), 0, 1);
+		if not clothesItem or (clothesItem and (clothesItem.weightclass ~= "Heavy")) then
 			local bonus = 0.2 * modifier;
-			
-			--[[
-			if cash >= 100 and cash < 250 then
-				bonus = bonus * 0.75;
-			elseif cash >= 250 and cash < 500 then
-				bonus = bonus * 0.5;
-			elseif cash >= 500 and cash < 1000 then
-				bonus = bonus * 0.25;
-			elseif cash >= 1000 then
-				bonus = 0;
-			end
-			--]]
-
+			infoTable.runSpeed = infoTable.runSpeed + (infoTable.runSpeed * bonus);
+			infoTable.walkSpeed = infoTable.walkSpeed + (infoTable.walkSpeed * bonus);
+		elseif clothesItem.weightclass == "Heavy" then
+			local bonus = 0.15 * modifier;
 			infoTable.runSpeed = infoTable.runSpeed + (infoTable.runSpeed * bonus);
 			infoTable.walkSpeed = infoTable.walkSpeed + (infoTable.walkSpeed * bonus);
 		end
+		
 	end
 	
 	if player.warcrySlowSpeed then

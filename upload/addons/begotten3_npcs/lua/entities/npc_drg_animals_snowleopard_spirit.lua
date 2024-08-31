@@ -9,7 +9,8 @@ ENT.RagdollOnDeath = false
 ENT.CollisionBounds = Vector(15, 15, 40)
 ENT.BloodColor = DONT_BLEED
 ENT.Frightening = false
-ENT.SightRange = 1000
+ENT.SightFOV = 300
+ENT.SightRange = 1024
 
 -- Sounds --
 ENT.OnDamageSounds = {"leopard/attack.wav"}
@@ -17,9 +18,10 @@ ENT.OnDamageSounds = {"leopard/attack.wav"}
 
 -- Stats --
 ENT.ArmorPiercing = 75;
-ENT.SpawnHealth = 425;
+ENT.SpawnHealth = 450;
 ENT.StaminaDamage = 60;
-ENT.XPValue = 175;
+ENT.XPValue = 145;
+ENT.MaxMultiHit = 1;
 
 -- Regen --
 
@@ -136,7 +138,7 @@ if SERVER then
                               if itemInstance then
                                   local entity = Clockwork.entity:CreateItem(nil, itemInstance, gib:GetPos() + Vector(0, 0, 16));
                                   
-                                  entity.lifeTime = CurTime() + cwItemSpawner.ItemLifetime;
+                                  entity.lifeTime = CurTime() + config.GetVal("loot_item_lifetime");
                                   
                                   table.insert(cwItemSpawner.ItemsSpawned, entity);
                               end
@@ -158,6 +160,7 @@ self:SetCooldown("Leap", 8)
 self:SetVelocity(self:GetUp()*100)
 self:SetVelocity(self:GetForward()*600)
 self:Jump(100)
+self:EmitSound("leopard/idle1.wav", 80)
 end
 end
 
@@ -190,6 +193,7 @@ end
 
   function ENT:OnParried()
     self.nextMeleeAttack = CurTime() + 2;
+	self:ResetSequence(ACT_IDLE);
   end
 
   function ENT:OnMeleeAttack(enemy)

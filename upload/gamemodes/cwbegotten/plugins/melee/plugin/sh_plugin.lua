@@ -12,7 +12,7 @@ Clockwork.kernel:IncludePrefixed("sv_hooks.lua");
 
 function cwMelee:KeyPress(player, key)
 	local bUse = (key == IN_USE)
-	local bAttack2 = (key == IN_ATTACK2)
+	local bAttack2 = (key == IN_ATTACK2);
 
 	if SERVER then
 		if (bUse or bAttack2) then
@@ -175,7 +175,7 @@ function cwMelee:KeyPress(player, key)
 				if (activeWeapon.Base == "sword_swepbase") then
 					local blockTable = GetTable(activeWeapon.realBlockTable);
 
-					if (blockTable and blockTable["canparry"] == true) or (activeWeapon:GetClass() == "begotten_fists" and player.GetCharmEquipped and player:GetCharmEquipped("ring_pugilist")) then
+					if ((blockTable and blockTable["canparry"] == true) and activeWeapon.CanParry ~= false) or (activeWeapon:GetClass() == "begotten_fists" and player.GetCharmEquipped and player:GetCharmEquipped("ring_pugilist")) then
 						if (!player.HasBelief or player:HasBelief("parrying")) then
 							activeWeapon:SecondaryAttack();
 						end;

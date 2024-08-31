@@ -9,6 +9,7 @@ ENT.RagdollOnDeath = false
 ENT.CollisionBounds = Vector(18, 18, 65)
 ENT.BloodColor = BLOOD_COLOR_RED
 ENT.Frightening = false
+ENT.SightFOV = 300
 ENT.SightRange = 800
 
 -- Sounds --
@@ -16,10 +17,11 @@ ENT.OnDamageSounds = {"bear/attack1.wav"}
 --ENT.OnIdleSounds = {"bear/idle1.wav", "bear/idle2.wav"}
 
 -- Stats --
-ENT.ArmorPiercing = 70;
+ENT.ArmorPiercing = 60;
 ENT.SpawnHealth = 600;
 ENT.StaminaDamage = 65;
-ENT.XPValue = 195;
+ENT.XPValue = 150;
+ENT.MaxMultiHit = 2;
 
 -- Regen --
 
@@ -32,7 +34,7 @@ ENT.ReachEnemyRange = 80
 ENT.AvoidEnemyRange = 0
 
 -- Relationships --
-ENT.Factions = {"FACTION_BROWNBEAR"}
+ENT.Factions = {"FACTION_DEER","FACTION_FORESTHERBIVORES","FACTION_BROWNBEAR", "FACTION_SNOWLEOPARD"}
 
 -- Movements/animations --
 ENT.IdleAnimation = "idle"
@@ -150,6 +152,7 @@ end
 
   function ENT:OnParried()
     self.nextMeleeAttack = CurTime() + 2;
+	self:ResetSequence(ACT_IDLE);
   end
   
   function ENT:OnMeleeAttack(enemy)
@@ -182,7 +185,7 @@ end
 
   function ENT:Attack1()
       self:Attack({
-        damage = 70,
+        damage = 60,
         range = 160,
         delay = 0.6,
         type = DMG_SLASH,

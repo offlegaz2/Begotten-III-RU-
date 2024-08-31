@@ -398,6 +398,32 @@ function Clockwork.kernel:DeleteClockworkData(fileName)
 	return fileio.Delete("settings/clockwork/"..fileName..".cw")
 end
 
+function Clockwork.kernel:ProcessSaveData(bInstant, bNotify)
+	if bInstant then
+		local saveStart = SysTime();
+	
+		Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, "Starting save data!");
+		
+		hook.Run("PreSaveData")
+		hook.Run("SaveData")
+		hook.Run("PostSaveData")
+		
+		Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, "Data saved! Took "..tostring(SysTime() - saveStart).." seconds.");
+	else
+		if bNotify then
+			hook.Run("SaveDataImminent")
+		end
+	
+		timer.Simple(2, function()
+			Clockwork.kernel:ProcessSaveData(true);
+			
+			timer.Simple(1, function()
+				hook.Run("SaveDataCompleted");
+			end);
+		end);
+	end
+end
+
 -- A function to convert a force.
 function Clockwork.kernel:ConvertForce(force, limit)
 	local forceLength = force:Length()
@@ -844,7 +870,9 @@ function Clockwork.kernel:DoEntityTakeDamageHook(entity, damageInfo)
 	if (player) then
 		ragdoll = player:GetRagdollEntity();
 	
-		if (hook.Run("PlayerShouldTakeDamage", player, attacker, inflictor, damageInfo) == false or player:IsInGodMode()) then
+		if (hook.Run("PlayerShouldTakeDamage", player, attacker) == false or
+		hook.Run("PlayerShouldTakeDamageNew", player, attacker, inflictor, damageInfo) or
+		player:IsInGodMode()) then
 			damageInfo:SetDamage(0)
 			return true
 		end
@@ -907,6 +935,10 @@ function Clockwork.kernel:DoEntityTakeDamageHook(entity, damageInfo)
 						amount = hook.Run("GetFallDamage", player, velocity)
 						hook.Run("OnPlayerHitGround", player, false, false, true);
 						entity.cwNextFallDamage = curTime + 0.5;
+						
+						--print("Damage: " ..amount);
+						--print("Velocity: "..tostring(physicsObject:GetVelocity()));
+						--print("Vel Length: "..velocity);
 						
 						damageInfo:SetDamage(amount)
 					end
@@ -1305,7 +1337,7 @@ function playerMeta:StripWeapon(weaponClass)
 
 		for k, v in pairs(ragdollWeapons) do
 			if (v.weaponData["class"] == weaponClass) then
-				weapons[k] = nil
+				ragdollWeapons[k] = nil
 			end
 		end
 	else
@@ -1727,9 +1759,11 @@ function playerMeta:GetMaxHealth(health)
 	if cwMedicalSystem then
 		local injuries = cwMedicalSystem:GetInjuries(self);
 		
-		for k, v in pairs (injuries) do
-			if v["burn"] then
-				maxHealth = maxHealth - 5;
+		if injuries then
+			for k, v in pairs (injuries) do
+				if v["burn"] then
+					maxHealth = maxHealth - 5;
+				end
 			end
 		end
 	end
@@ -1919,20 +1953,20 @@ end
 function playerMeta:GetMaxWeight()
 	local backpackItem = self:GetBackpackEquipped();
 	local clothesItem = self:GetClothesEquipped();
-	local itemsList = Clockwork.inventory:GetAsItemsList(self:GetInventory())
+	--local itemsList = Clockwork.inventory:GetAsItemsList(self:GetInventory())
 	--local weight = self:GetNetVar("InvWeight") or 8
 	local weight = config.GetVal("default_inv_weight") or 20;
 	
 	weight = hook.Run("PlayerAdjustMaxWeight", self, weight);
 	
 	-- Apply item weight buffs after belief weight buffs.
-	for k, v in pairs(itemsList) do
+	--[[for k, v in pairs(itemsList) do
 		local addInvWeight = v.addInvSpace;
 		
 		if (addInvWeight) then
 			weight = weight + addInvWeight
 		end
-	end
+	end]]--
 	
 	if backpackItem and backpackItem.invSpace then
 		weight = weight + backpackItem.invSpace;
@@ -1948,21 +1982,27 @@ end
 -- A function to get the maximum space a player can carry.
 function playerMeta:GetMaxSpace()
 	local backpackItem = self:GetBackpackEquipped();
-	local itemsList = Clockwork.inventory:GetAsItemsList(self:GetInventory())
-	local space = self:GetNetVar("InvSpace") or 10
+	local clothesItem = self:GetClothesEquipped();
+	--local itemsList = Clockwork.inventory:GetAsItemsList(self:GetInventory())
+	--local space = self:GetNetVar("InvSpace") or 10;
+	local space = config.GetVal("default_inv_space") or 100;
 
 	--space = hook.Run("PlayerAdjustMaxSpace", player, space)
 	
-	for k, v in pairs(itemsList) do
+	--[[for k, v in pairs(itemsList) do
 		local addInvSpace = v.addInvVolume
 		if (addInvSpace) then
 			space = space + addInvSpace
 		end
-	end
+	end]]--
 	
 	if backpackItem and backpackItem.invSpace then
 		space = space + backpackItem.invSpace;
 	end
+	
+	if clothesItem and clothesItem.pocketSpace then
+		weight = weight + clothesItem.pocketSpace;
+	end;
 
 	return space
 end
@@ -2266,7 +2306,6 @@ end
 
 -- A function to set a shared variable for a player.
 function playerMeta:SetSharedVar(key, value, sharedTable)
-	--print("Sending shared var: "..key);
 	return self:SetNetVar(key, value)
 end
 
@@ -2296,11 +2335,6 @@ end
 -- A function to get the entity a player is holding.
 function playerMeta:GetHoldingEntity()
 	return hook.Run("PlayerGetHoldingEntity", self) or self.cwIsHoldingEnt
-end
-
--- A function to get whether a player's character menu is reset.
-function playerMeta:IsCharacterMenuReset()
-	return self.cwCharMenuReset
 end
 
 -- A function to check if a player can afford an amount.
@@ -2386,8 +2420,10 @@ concommand.Add("cwc", function(player, command, arguments)
 		tf	= "takeflags"
 	}
 	
-	if !player:IsAdmin() then
-		Schema:EasyText(GetAdmins(), "firebrick", "Player "..player:Name().." has attempted to run cwc in console! You should ban them immediately.");
+	if IsValid(player) then
+		if !player:IsAdmin() then
+			Schema:EasyText(GetAdmins(), "firebrick", "Player "..player:Name().." has attempted to run cwc with the arguments ("..table.concat(arguments, ", ")..") in console! It could be a bind or it could be malicious.");
+		end
 	end
 
 	--	if called from console

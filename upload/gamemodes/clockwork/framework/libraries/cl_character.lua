@@ -157,7 +157,7 @@ function Clockwork.character:OpenNextCreationPanel()
 			"PlayerAdjustCharacterCreationInfo", self:GetActivePanel(), info
 		);
 		
-		Clockwork.datastream:Start("CreateCharacter", info);
+		netstream.Start("CreateCharacter", info);
 	else
 		info.index = nextPanel.index;
 		panel:OpenPanel(nextPanel.vguiName, info);
@@ -346,7 +346,7 @@ function Clockwork.character:RefreshPanelList()
 		end
 		
 		local smallTextFont = Clockwork.option:GetFont("menu_text_small");
-		local newsizew, newsizeH = Clockwork.kernel:GetCachedTextSize(smallTextFont, "SUFFER");
+		local newsizew, newsizeH = Clockwork.kernel:GetCachedTextSize(smallTextFont, "RETURN");
 		
 		panel.cancelButton = vgui.Create("cwLabelButton", panel);
 		panel.cancelButton:SetFont(smallTextFont);
@@ -394,7 +394,26 @@ function Clockwork.character:RefreshPanelList()
 		panel.enterHellButton:SetFont(smallTextFont);
 		panel.enterHellButton:SetText("ENTER HELL");
 		panel.enterHellButton:SetCallback(function(panel)
-			Clockwork.character:GetPanel():ReturnToMainMenu();
+			local valid_characters = {};
+			local name = Clockwork.Client:Name(true);
+			
+			for i, v in ipairs(Clockwork.character:GetAll()) do
+				if !v.permakilled and v.name ~= name then
+					table.insert(valid_characters, i);
+				end
+			end
+			
+			if !table.IsEmpty(valid_characters) then
+				local random_character = valid_characters[math.random(1, #valid_characters)];
+				
+				if random_character then
+					netstream.Start("InteractCharacter", {
+						characterID = random_character, action = "use"}
+					);
+					
+					surface.PlaySound("begotten/ui/buttonclick.wav");
+				end
+			end
 		end);
 		panel.enterHellButton:SizeToContents();
 		panel.enterHellButton:SetPos(ScrW() * 0.75 - (panel.enterHellButton:GetWide() / 2), ScrH() * 0.925);
@@ -458,11 +477,6 @@ end;
 -- A function to get whether the character panel is polling.
 function Clockwork.character:IsPanelPolling()
 	return self.isPolling;
-end;
-
--- A function to get whether the character menu is reset.
-function Clockwork.character:IsMenuReset()
-	return self.isMenuReset;
 end;
 
 -- A function to set whether the character panel is open.

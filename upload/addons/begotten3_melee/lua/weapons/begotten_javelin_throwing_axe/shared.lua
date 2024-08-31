@@ -67,6 +67,8 @@ function SWEP:HandlePrimaryAttack()
 	timer.Create("javelin_timer_"..self.Owner:EntIndex(), 0.5, 1, function()
 		if IsValid(self) and IsValid(self.Owner) and self.Owner:GetActiveWeapon() and self.Owner:GetActiveWeapon().PrintName == "Throwing Axe" then
 			self:FireJavelin();
+			
+			self.Owner.cloakCooldown = CurTime() + 5;
 		end
 	end);
 	
@@ -114,7 +116,7 @@ function SWEP:FireJavelin()
 		javelin.Owner = owner
 		javelin:Spawn()
 		javelin:Activate()
-		
+
 		local phys = javelin:GetPhysicsObject()
 		
 		if owner.GetCharmEquipped and owner:GetCharmEquipped("hurlers_talisman") then

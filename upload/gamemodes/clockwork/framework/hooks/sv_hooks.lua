@@ -95,7 +95,7 @@ function GM:OnePlayerSecond(player, curTime, infoTable)
 
 	player:SetDTString(STRING_FLAGS, player:GetFlags())
 	player:SetNetVar("Model", player:GetDefaultModel())
-	player:SetDTString(STRING_NAME, player:Name())
+	player:SetDTString(STRING_NAME, player:Name(true))
 	player:SetNetVar("Cash", player:GetCash())
 	player:SetNetVar("CustomColor", player:GetCharacterData("CustomColor"));
 
@@ -213,15 +213,12 @@ function GM:PlayerThink(player, curTime, infoTable, alive, initialized, plyTab)
 	end;]]--
 	
 	if !plyTab.nextInvThink or plyTab.nextInvThink > curTime then
-		local maxWeight = player:GetMaxWeight();
-
-		infoTable.inventoryWeight = maxWeight;
-		plyTab.inventoryWeight = Clockwork.inventory:CalculateWeight(player:GetInventory());
-		plyTab.maxWeight = maxWeight;
+		infoTable.inventoryWeight = Clockwork.inventory:CalculateWeight(player:GetInventory());
+		infoTable.maxWeight = player:GetMaxWeight()
 		
-		player:SetNetVar("InvWeight", math.ceil(infoTable.inventoryWeight))
-		player:SetNetVar("InvSpace", math.ceil(infoTable.inventorySpace))
-		--player:SetNetVar("Wages", math.ceil(infoTable.wages or 0))
+		--player:SetLocalVar("InvWeight", math.ceil(infoTable.inventoryWeight))
+		--player:SetLocalVar("InvSpace", math.ceil(infoTable.inventorySpace))
+		--player:SetLocalVar("Wages", math.ceil(infoTable.wages or 0))
 		
 		plyTab.nextInvThink = curTime + 2;
 	end
@@ -410,7 +407,9 @@ end
 -- Called when a player switches their weapon. 
 function GM:PlayerSwitchWeapon(player, oldWeapon, newWeapon)
 	timer.Simple(FrameTime(), function()
-		hook.Run("RunModifyPlayerSpeed", player, player.cwInfoTable, true);
+		if IsValid(player) then
+			hook.Run("RunModifyPlayerSpeed", player, player.cwInfoTable, true);
+		end
 	end);
 end;
 
@@ -1040,7 +1039,7 @@ function GM:PlayerSpawn(player)
 		
 		Clockwork.player:SetRecognises(player, player, RECOGNISE_TOTAL)
 		
-		Clockwork.datastream:Start(player, "RadioState", player:GetCharacterData("radioState", false) or false);
+		netstream.Start(player, "RadioState", player:GetCharacterData("radioState", false) or false);
 		
 		plyTab.cwChangeClass = false
 		plyTab.cwLightSpawn = false
@@ -1073,11 +1072,11 @@ function GM:PlayerSetHandsModel(player, entity)
 				model = "models/begotten/"..clothesItem.group.."_"..string.lower(player:GetGender())..".mdl";
 			end
 		else
-			local faction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
+			local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
 			local factionTable = Clockwork.faction:FindByID(faction);
 			
 			if factionTable then
-				local subfaction = player:GetSharedVar("kinisgerOverrideSubfaction") or player:GetSubfaction();
+				local subfaction = player:GetNetVar("kinisgerOverrideSubfaction") or player:GetSubfaction();
 				
 				if subfaction and factionTable.subfactions then
 					for k, v in pairs(factionTable.subfactions) do
@@ -1331,10 +1330,6 @@ function GM:PlayerDeathThink(player)
 
 	if (!player:HasInitialized()) then
 		return true
-	end
-
-	if (player:IsCharacterMenuReset()) then
-		return true
 	end]]--
 
 	--if (action == "spawn") then
@@ -1441,9 +1436,11 @@ function GM:GetFallDamage(player, velocity)
 	if (damage > 30) and !player:IsRagdolled() then
 		if hook.Run("PlayerCanFallOverFromFallDamage", player) ~= false then
 			timer.Simple(0, function()
-				Clockwork.player:SetRagdollState(player, RAGDOLL_FALLENOVER, nil)
+				if IsValid(player) then
+					Clockwork.player:SetRagdollState(player, RAGDOLL_FALLENOVER, nil)
 
-				player:SetDTBool(BOOL_FALLENOVER, true)
+					player:SetDTBool(BOOL_FALLENOVER, true)
+				end
 			end);
 		end
 	end
@@ -1675,10 +1672,7 @@ function GM:OneSecond()
 	end]]--
 
 	if (!Clockwork.NextSaveData or sysTime >= Clockwork.NextSaveData) then
-		hook.Run("PreSaveData")
-		hook.Run("SaveData")
-		hook.Run("PostSaveData")
-
+		Clockwork.kernel:ProcessSaveData(false, true);
 		Clockwork.NextSaveData = sysTime + config.Get("save_data_interval"):Get()
 	elseif (!Clockwork.NextSaveItemIDs or sysTime >= Clockwork.NextSaveItemIDs) then
 		-- This is too important not to save every few seconds, otherwise items can spawn with the item IDs of existing items and that's no good!
@@ -1702,12 +1696,10 @@ function GM:OneSecond()
 end
 
 do
-	local defaultInvWeight = config.GetVal("default_inv_weight")
-	local defaultInvSpace = config.GetVal("default_inv_weight")
-	local thinkRate = 0.2
 	local cwNextThink = 0
 	local cwNextSecond = 0
 	local cwNextHalfSecond = 0;
+	cwThinkRate = 0.2;
 
 	-- Called each tick.
 	function GM:Tick()
@@ -1722,8 +1714,6 @@ do
 					local plyTab = player:GetTable();
 					local infoTable = plyTab.cwInfoTable;
 
-					infoTable.inventoryWeight = defaultInvWeight
-					infoTable.inventorySpace = defaultInvSpace
 					infoTable.crouchedSpeed = plyTab.cwCrouchedSpeed
 					infoTable.jumpPower = plyTab.cwJumpPower
 					infoTable.walkSpeed = plyTab.cwWalkSpeed
@@ -1743,7 +1733,7 @@ do
 				end
 			end
 
-			cwNextThink = curTime + thinkRate
+			cwNextThink = curTime + cwThinkRate
 
 			if (curTime >= cwNextSecond) then
 				cwNextSecond = curTime + 1
@@ -1872,9 +1862,7 @@ function GM:PlayerCanDeleteCharacter(player, character) end
 
 -- Called when a player attempts to switch to a character.
 function GM:PlayerCanSwitchCharacter(player, character)
-	--[[if (!player:Alive() and !player:IsCharacterMenuReset()) then
-		return "You cannot switch characters while being dead."
-	else]]if (player:GetRagdollState() == RAGDOLL_KNOCKEDOUT) then
+	if (player:GetRagdollState() == RAGDOLL_KNOCKEDOUT) then
 		return "You cannot switch characters while being unconscious."
 	end
 
@@ -2043,14 +2031,14 @@ function GM:PlayerCanDeathClearRecognisedNames(player, attacker, damageInfo) ret
 
 -- Called when a player's ragdoll attempts to take damage.
 function GM:PlayerRagdollCanTakeDamage(player, ragdoll, inflictor, attacker, hitGroup, damageInfo)
-	if (!attacker:IsPlayer() and player:GetRagdollTable().immunity) then
+	if (!IsValid(attacker) or !attacker:IsPlayer() and player:GetRagdollTable().immunity) then
 		if (CurTime() <= player:GetRagdollTable().immunity) then
 			return false
 		end
 	end
 	
 	-- Stop held players from taking damage from trigger hurts.
-	if (attacker:GetClass() == "trigger_hurt") then
+	if (IsValid(attacker) and attacker:GetClass() == "trigger_hurt") then
 		if IsValid(ragdoll.cwHoldingGrab) then
 			return false;
 		end
@@ -3364,8 +3352,8 @@ end
 function GM:PlayerCharacterLoaded(player)
 	local plyTab = player:GetTable();
 	
-	player:SetNetVar("InvWeight", config.Get("default_inv_weight"):Get())
-	player:SetNetVar("InvSpace", config.Get("default_inv_space"):Get())
+	--player:SetLocalVar("InvWeight", config.Get("default_inv_weight"):Get())
+	--player:SetLocalVar("InvSpace", config.Get("default_inv_space"):Get())
 	plyTab.cwCharLoadedTime = CurTime()
 	plyTab.cwCrouchedSpeed = config.Get("crouched_speed"):Get()
 	plyTab.cwInitialized = true
@@ -3568,7 +3556,7 @@ end
 function GM:PrePlayerTakeDamage(player, attacker, inflictor, damageInfo) end
 
 -- Called when a player should take damage.
-function GM:PlayerShouldTakeDamage(player, attacker, inflictor, damageInfo)
+function GM:PlayerShouldTakeDamage(player, attacker)
 	if Clockwork.player:IsNoClipping(player) then
 		return false;
 	end
@@ -3664,7 +3652,7 @@ function GM:PlayerDeath(player, inflictor, attacker, damageInfo)
 		end
 		
 		player:SetCharacterData("Cash", 0, true);
-		player:SetSharedVar("Cash", 0);]]--
+		player:SetNetVar("Cash", 0);]]--
 		
 		if (IsValid(inflictor) and inflictor:GetClass() == "prop_combine_ball") then
 			if (damageInfo) then
@@ -3685,7 +3673,7 @@ function GM:PlayerDeath(player, inflictor, attacker, damageInfo)
 		if (attacker:IsPlayer() and damageInfo) then
 			local weapon = attacker:GetActiveWeapon();
 			
-			if IsValid(inflictor) and (inflictor:IsWeapon() or inflictor.isJavelin) then
+			if IsValid(inflictor) --[[and (inflictor:IsWeapon() or inflictor.isJavelin)]] then
 				if inflictor.GetPrintName then
 					inflictor = inflictor:GetPrintName();
 				end
@@ -3719,6 +3707,12 @@ function GM:PlayerDeath(player, inflictor, attacker, damageInfo)
 				Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, attacker:GetClass().." has dealt "..tostring(math.ceil(damageInfo:GetDamage())).." damage to "..player:Name()..", killing them!")
 			end
 		end
+	elseif IsValid(inflictor) then
+		Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, inflictor:GetClass().." has dealt "..tostring(math.ceil(damageInfo:GetDamage())).." damage to "..player:Name()..", killing them!")
+	elseif damageInfo:IsFallDamage() then
+		Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from fall damage, killing them!")
+	else
+		Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from an unknown source, killing them!")
 	end
 end
 
@@ -3805,17 +3799,7 @@ end
 -- Called when the server shuts down.
 function GM:ShutDown()
 	Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, "Server shutting down!");
-	
-	--plugin.Call("PreSaveData")
-	--plugin.Call("SaveData")
-	--plugin.Call("PostSaveData")
-	
-	hook.Run("PreSaveData")
-	hook.Run("SaveData")
-	hook.Run("PostSaveData")
-	
-	Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, "Data saved!");
-
+	Clockwork.kernel:ProcessSaveData(true);
 	Clockwork.ShuttingDown = true
 end
 
@@ -3917,13 +3901,21 @@ end
 function GM:EntityTakeDamage(entity, damageInfo)
 	local class = entity:GetClass();
 	
-	if class == "prop_dynamic" or class == "cw_duelstatue" or class == "cw_hellportal" then
-		return true;
-	elseif entity.cwInventory then
+	if (class == "prop_dynamic" or class == "cw_duelstatue" or class == "cw_hellportal") or entity.cwInventory then
 		return true;
 	end
 	
-	if (entity:IsPlayer() and damageInfo:IsExplosionDamage() and !entity:IsRagdolled() and !entity:IsNoClipping()) then
+	local damage = damageInfo:GetDamage();
+	
+	if (damage == 0) then
+		return true;
+	end
+	
+	if (damageInfo:IsDamageType(DMG_CRUSH) and damage < 10) then
+		return true;
+	end
+	
+	if (entity:IsPlayer() and damageInfo:IsExplosionDamage() and damage >= 25 and !entity:IsRagdolled() and !entity:IsNoClipping()) then
 		if !Clockwork.player:HasFlags(entity, "E") and !Clockwork.player:HasFlags(entity, "K") then
 			if !cwBeliefs or (cwBeliefs and !entity:HasBelief("fortitude_finisher")) then
 				local data = {}
@@ -3941,14 +3933,6 @@ function GM:EntityTakeDamage(entity, damageInfo)
 		end
 	end
 	
-	if (damageInfo:IsDamageType(DMG_CRUSH) and damageInfo:GetDamage() < 10) then
-		damageInfo:SetDamage(0)
-	end
-	
-	if (damageInfo:GetDamage() == 0) then
-		return true;
-	end
-
 	local inflictor = damageInfo:GetInflictor()
 	local attacker = damageInfo:GetAttacker()
 
@@ -3969,8 +3953,7 @@ function GM:EntityTakeDamage(entity, damageInfo)
 			return false
 		end
 
-		if ((IsValid(inflictor) and inflictor:IsBeingHeld())
-		or attacker:IsBeingHeld()) then
+		if ((IsValid(inflictor) and inflictor:IsBeingHeld()) or (IsValid(attacker) and attacker:IsBeingHeld())) then
 			damageInfo:SetDamage(0)
 			return false
 		end
@@ -4059,7 +4042,7 @@ function GM:EntityTakeDamage(entity, damageInfo)
 							if damageInfo:IsDamageType(DMG_POISON) then
 								Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from "..attacker:Name().."'s poison, leaving them at "..player:Health().." health"..armor)
 							else
-								if IsValid(inflictor) and (inflictor:IsWeapon() or inflictor.isJavelin) then	
+								if IsValid(inflictor) --[[and (inflictor:IsWeapon() or inflictor.isJavelin)]] then	
 									inflictor = inflictor.PrintName or inflictor:GetClass();
 								else
 									local activeWeapon = attacker:GetActiveWeapon();
@@ -4082,6 +4065,10 @@ function GM:EntityTakeDamage(entity, damageInfo)
 						else
 							Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from "..attacker:GetClass()..", leaving them at "..player:Health().." health"..armor)
 						end
+					elseif IsValid(inflictor) then
+						Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from "..inflictor:GetClass()..", leaving them at "..player:Health().." health"..armor)
+					elseif damageInfo:IsFallDamage() then
+						Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from fall damage, leaving them at "..player:Health().." health"..armor)
 					else
 						Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from an unknown source, leaving them at "..player:Health().." health"..armor)
 					end
@@ -4133,7 +4120,7 @@ function GM:EntityTakeDamage(entity, damageInfo)
 						if damageInfo:IsDamageType(DMG_POISON) then
 							Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from "..attacker:Name().."'s poison, leaving them at "..player:Health().." health"..armor)
 						else
-							if IsValid(inflictor) and (inflictor:IsWeapon() or inflictor.isJavelin) then	
+							if IsValid(inflictor) --[[and (inflictor:IsWeapon() or inflictor.isJavelin)]] then	
 								inflictor = inflictor.PrintName or inflictor:GetClass();
 							else
 								local activeWeapon = attacker:GetActiveWeapon();
@@ -4156,6 +4143,10 @@ function GM:EntityTakeDamage(entity, damageInfo)
 					else
 						Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from "..attacker:GetClass()..", leaving them at "..player:Health().." health"..armor)
 					end
+				elseif IsValid(inflictor) then
+					Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from "..inflictor:GetClass()..", leaving them at "..player:Health().." health"..armor)
+				elseif damageInfo:IsFallDamage() then
+					Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from fall damage, leaving them at "..player:Health().." health"..armor)
 				else
 					Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has taken "..tostring(math.ceil(damageInfo:GetDamage())).." damage from an unknown source, leaving them at "..player:Health().." health"..armor)
 				end

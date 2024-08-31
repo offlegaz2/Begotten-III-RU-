@@ -57,10 +57,26 @@ ENT.PossessionViews = {
 	}
 }
 ENT.PossessionBinds = {
+	[IN_JUMP] = {{
+		coroutine = true,
+		onkeydown = function(self)
+			if(!self:IsOnGround()) then return; end
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,1200) + self:GetForward() * 100);
+
+			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	}},
+
 	[IN_ATTACK] = {{
 		coroutine = true,
 		onkeydown = function(self)
 			self:EmitSound("begotten/npc/brute/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+			if(self.nextMeleeAttack and self.nextMeleeAttack > CurTime()) then return; end
+						self:EmitSound("begotten/npc/brute/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
 			self:PlayActivityAndMove(ACT_MELEE_ATTACK1, 1, self.PossessionFaceForward)
 		end
 	}}
@@ -134,7 +150,7 @@ if SERVER then
 					ragdoll:Fire("fadeandremove", 1);
 					ragdoll:EmitSound("begotten/npc/burn.wav");
 					
-					if cwRituals and cwItemSpawner then
+					if cwRituals and cwItemSpawner and !hook.Run("GetShouldntThrallDropCatalyst", ragdoll) then
 						for i = 1, 10 do
 							local randomItem;
 							local spawnable = cwItemSpawner:GetSpawnableItems(true);
@@ -175,7 +191,7 @@ if SERVER then
 	ENT.pitch = 80
 	function ENT:CustomThink()
 		if (!self.lastStuck and self:IsStuck()) then
-			self.lastStuck = CurTime() + 2;
+			self.lastStuck = CurTime() + 9;
 		end;
 		
 		if (self.lastStuck and self.lastStuck < CurTime()) then

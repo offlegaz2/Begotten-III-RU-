@@ -184,8 +184,10 @@ function SWEP:Deploy()
 					end
 				end
 			end
+			
+			self.Weapon:CallOnClient("Initialize");
 		end
-		
+
 		if self.OnMeleeStanceChanged then
 			self:OnMeleeStanceChanged("reg_swing");
 		end
@@ -343,6 +345,34 @@ function SWEP:Think()
 		plyTab.beginBlockTransition = false;
 	end;
 	
+	if SERVER then
+		local curTime = CurTime();
+		
+		-- Last ditch effort to fix the clientside itemtable desync.
+		if !self.nextItemSend or self.nextItemSend <= curTime then
+			if IsValid(player) and player:IsPlayer() then
+				local itemTable = item.GetByWeapon(self);
+					
+				if itemTable then
+					netstream.Start(player, "WeaponItemData", {
+						definition = item.GetDefinition(itemTable, true),
+						weapon = self:EntIndex()
+					})
+
+					if self:GetNWString("ItemID") ~= itemTable.itemID then
+						self:SetNWString(
+							"ItemID", tostring(itemTable.itemID)
+						)
+					end
+					
+					self.cwItemTable = itemTable
+				end
+			end
+			
+			self.nextItemSend = curTime + math.random(1, 5);
+		end
+	end
+	
 	for k, v in next, self.Timers do
 		if v.start + v.duration <= CurTime() then
 			v.callback()
@@ -418,7 +448,7 @@ function SWEP:CanPrimaryAttack()
 	end
 	
 	if cwMedicalSystem then
-		local injuries = {};
+		local injuries;
 		
 		if SERVER then
 			injuries = cwMedicalSystem:GetInjuries(self.Owner);
@@ -426,12 +456,14 @@ function SWEP:CanPrimaryAttack()
 			injuries = Clockwork.Client.cwInjuries;
 		end
 		
-		if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-			attackCost = attackCost + (attacktable["takeammo"] * 2);
-		end
-		
-		if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-			attackCost = attackCost + (attacktable["takeammo"] * 2);
+		if injuries then
+			if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
+				attackCost = attackCost + (attacktable["takeammo"] * 2);
+			end
+			
+			if (injuries[HITGROUP_RIGHTARM]["broken_bone"]) then
+				attackCost = attackCost + (attacktable["takeammo"] * 2);
+			end
 		end
 	end
 	
@@ -493,6 +525,10 @@ function SWEP:PrimaryAttack()
 	local thrustOverride = false;
 
 	owner.blockStaminaRegen = curTime + 5;
+	
+	if !owner.cloakCooldown or owner.cloakCooldown < (curTime + 5) then
+		owner.cloakCooldown = curTime + 5;
+	end
 
 	wep:SetNextPrimaryFire(curTime + delay);
 	wep:SetNextSecondaryFire(curTime + (delay * 0.1));
@@ -809,7 +845,7 @@ function SWEP:PrimaryAttack()
 												local guardblockamount = blockTable["guardblockamount"];
 												
 												if cwMedicalSystem then
-													local injuries = {};
+													local injuries;
 													
 													if SERVER then
 														injuries = cwMedicalSystem:GetInjuries(owner);
@@ -817,12 +853,14 @@ function SWEP:PrimaryAttack()
 														injuries = Clockwork.Client.cwInjuries;
 													end
 													
-													if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-														guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
-													end
-													
-													if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-														guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+													if injuries then
+														if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
+															guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+														end
+														
+														if (injuries[HITGROUP_RIGHTARM]["broken_bone"]) then
+															guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+														end
 													end
 												end
 												
@@ -885,7 +923,7 @@ function SWEP:PrimaryAttack()
 		local attackCost = takeAmmo;
 
 		if cwMedicalSystem then
-			local injuries = {};
+			local injuries;
 			
 			if SERVER then
 				injuries = cwMedicalSystem:GetInjuries(self.Owner);
@@ -893,12 +931,14 @@ function SWEP:PrimaryAttack()
 				injuries = Clockwork.Client.cwInjuries;
 			end
 			
-			if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-				attackCost = attackCost + (takeAmmo * 2);
-			end
-			
-			if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-				attackCost = attackCost + (takeAmmo * 2);
+			if injuries then
+				if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
+					attackCost = attackCost + (takeAmmo * 2);
+				end
+				
+				if (injuries[HITGROUP_RIGHTARM]["broken_bone"]) then
+					attackCost = attackCost + (takeAmmo * 2);
+				end
 			end
 		end
 			
@@ -953,7 +993,7 @@ end
 		
 		if cwBeliefs and owner.HasBelief then
 			if owner:HasBelief("shieldwall") then
-				shield_reduction = 1 - ((1 - shield_reduction) * 0.6);
+				shield_reduction = 1;
 			end
 		end
 		
@@ -981,7 +1021,7 @@ end
 				local d = DamageInfo()
 				
 				if cwBeliefs and owner.HasBelief and owner:HasBelief("repulsive_riposte") then
-					d:SetDamage(damage * shield_reduction * 4 * hit_reduction);
+					d:SetDamage(damage * shield_reduction * 3.5 * hit_reduction);
 				else
 					d:SetDamage(damage * shield_reduction * 3 * hit_reduction);
 				end
@@ -2278,7 +2318,7 @@ function SWEP:SecondaryAttack()
 	local parry_cost = blocktable["parrytakestamina"];
 	
 	if cwMedicalSystem then
-		local injuries = {};
+		local injuries;
 		
 		if SERVER then
 			injuries = cwMedicalSystem:GetInjuries(ply);
@@ -2286,19 +2326,26 @@ function SWEP:SecondaryAttack()
 			injuries = Clockwork.Client.cwInjuries;
 		end
 		
-		if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-			parry_cost = parry_cost + (blocktable["parrytakestamina"] * 2);
-		end
-		
-		if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-			parry_cost = parry_cost + (blocktable["parrytakestamina"] * 2);
+		if injuries then
+			if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
+				parry_cost = parry_cost + (blocktable["parrytakestamina"] * 2);
+			end
+			
+			if (injuries[HITGROUP_RIGHTARM]["broken_bone"]) then
+				parry_cost = parry_cost + (blocktable["parrytakestamina"] * 2);
+			end
 		end
 	end
 	
 	--if ply:GetNWInt("meleeStamina", 100) < parry_cost then return end
 	if ply:GetNWInt("Stamina", 100) < parry_cost then return end
-		
-	self:ParryAnimation()
+	
+	if self.ParryAnimation then
+		self:ParryAnimation()
+	else
+		ErrorNoHalt("ParryAnimation function not found for swep: "..self:GetClass());
+	end
+	
 	ply:EmitSound(attacksoundtable["parryswing"][math.random(1, #attacksoundtable["parryswing"])])
 
 	local wep = self.Weapon
@@ -2331,8 +2378,12 @@ function SWEP:SecondaryAttack()
 	end
 	
 	self:CreateTimer(parryWindow, "parryTimer"..ply:EntIndex(), function()
-		if self:IsValid() and !ply:IsRagdolled() and ply:Alive() then
-			ply:SetNWBool( "Parry", false )
+		if self:IsValid() and ply:IsValid() and !ply:IsRagdolled() and ply:Alive() then
+			ply:SetNWBool("Parry", false)
+			
+			if ply.parryStacks then
+				ply.parryStacks = nil;
+			end
 			
 			if (ply:KeyDown(IN_ATTACK2)) then
 				if (!ply:KeyDown(IN_USE)) then
@@ -2362,7 +2413,7 @@ function SWEP:SecondaryAttack()
 									local guardblockamount = blockTable["guardblockamount"];
 									
 									if cwMedicalSystem then
-										local injuries = {};
+										local injuries;
 										
 										if SERVER then
 											injuries = cwMedicalSystem:GetInjuries(ply);
@@ -2370,12 +2421,14 @@ function SWEP:SecondaryAttack()
 											injuries = Clockwork.Client.cwInjuries;
 										end
 										
-										if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-											guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
-										end
-										
-										if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-											guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+										if injuries then
+											if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
+												guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+											end
+											
+											if (injuries[HITGROUP_RIGHTARM]["broken_bone"]) then
+												guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+											end
 										end
 									end
 													
@@ -2429,7 +2482,7 @@ function SWEP:SecondaryAttack()
 									local guardblockamount = blockTable["guardblockamount"];
 									
 									if cwMedicalSystem then
-										local injuries = {};
+										local injuries;
 										
 										if SERVER then
 											injuries = cwMedicalSystem:GetInjuries(ply);
@@ -2437,12 +2490,14 @@ function SWEP:SecondaryAttack()
 											injuries = Clockwork.Client.cwInjuries;
 										end
 										
-										if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-											guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
-										end
-										
-										if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
-											guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+										if injuries then
+											if (injuries[HITGROUP_LEFTARM]["broken_bone"]) then
+												guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+											end
+											
+											if (injuries[HITGROUP_RIGHTARM]["broken_bone"]) then
+												guardblockamount = guardblockamount + (blockTable["guardblockamount"] * 2);
+											end
 										end
 									end
 													
@@ -2627,9 +2682,7 @@ surface.CreateFont( "QuadFontSmall", {
 end
 
 function SWEP:ResetGestures(player)
-	if self.realIronSights then
-		self:TriggerAnim2(player, self.realBlockAnim, 1);
-	end
+	self:TriggerAnim2(player, self.realBlockAnim, 1);
 end
 
 function SWEP:InitFunc()
@@ -2652,7 +2705,7 @@ function SWEP:GetCapabilities()
 end
 
 function SWEP:ShouldDropOnDie()
-	return true
+	return false
 end
 
 function SWEP:GetPrintName()
@@ -2989,7 +3042,7 @@ function SWEP:Initialize()
 			end
 		end
 
-		if IsValid(self.Owner) and self.Owner:IsPlayer() then
+		if IsValid(self.Owner) and self.Owner:IsPlayer() and self.Owner:GetActiveWeapon() == self then
 			local vm = self.Owner:GetViewModel();
 			
 			if IsValid(vm) then
@@ -3002,10 +3055,6 @@ function SWEP:Initialize()
 	self:SetHoldType(self:GetHoldtypeOverride());
 end
 
-function SWEP:OnDrop()
-	self:OnRemove();
-end
-
 function SWEP:Holster()
 	local player = self.OwnerOverride or self.Owner;
 	
@@ -3014,12 +3063,7 @@ function SWEP:Holster()
 
 		self:StopAllAnims(player);
 		
-		player:SetNWBool("ThrustStance", false);
-		player:SetNWBool("Parry", false);
-		player:SetNWBool("ParrySucess", false);
-		player:SetNWBool("Riposting", false);
-
-		if CLIENT and player:IsPlayer() then
+		if CLIENT then
 			local vm = player:GetViewModel()
 			
 			if IsValid(vm) then
@@ -3028,6 +3072,26 @@ function SWEP:Holster()
 				vm:SetSubMaterial( 1, "" )
 				vm:SetSubMaterial( 2, "" )
 			end
+		else
+			if player:GetNWBool("ThrustStance") then
+				player:SetNWBool("ThrustStance", false);
+			end
+			
+			if player:GetNWBool("Parry") then
+				player:SetNWBool("Parry", false);
+			end
+			
+			if player:GetNWBool("ParrySucess") then
+				player:SetNWBool("ParrySucess", false);
+			end
+			
+			if player:GetNWBool("Riposting") then
+				player:SetNWBool("Riposting", false);
+			end
+			
+			if player.parryStacks then
+				player.parryStacks = nil;
+			end
 		end
 	end
 	
@@ -3035,15 +3099,15 @@ function SWEP:Holster()
 		self:OnHolster();
 	end
 	
+	if CLIENT then
+		self:RemoveModels();
+	end
+	
 	return true;
 end
 
 function SWEP:OnRemove()
 	self:Holster();
-	
-	if CLIENT then
-		self:RemoveModels();
-	end
 end
 
 function SWEP:GetHoldtypeOverride()
@@ -3271,7 +3335,7 @@ if CLIENT then
 			if (v.type == "Model") then
 				local model = v.modelEnt
 				
-				if !IsValid(model) or model:GetParent() ~= self.Owner then
+				if !IsValid(model) or model:GetParent() ~= self.Owner and IsValid(self.Owner) then
 					self:CreateModels(wepTab.WElements);
 					
 					return;
@@ -3806,6 +3870,7 @@ if CLIENT then
 			target.gestureweightbegin = 0;
 			target.gestureweightblock = 0;
 			target.gestureweightprogress = 0;
+			target.gestureweightlookup = 0;
 
 			target:AnimResetGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD);
 			target:AnimResetGestureSlot(GESTURE_SLOT_CUSTOM);
@@ -3816,7 +3881,7 @@ end;
 
 function SWEP:StopAllAnims(target)
 	if SERVER then
-		net.Start( "BegottenAnimStop", true )
+		net.Start("BegottenAnimStop", true);
 		net.WriteEntity(target);
 		net.Broadcast();
 	end;

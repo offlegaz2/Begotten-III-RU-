@@ -3,12 +3,12 @@
 	written by: cash wednesday, DETrooper, gabs and alyousha35.
 --]]
 
-game.AddParticles("particles/fire_01.pcf");
-PrecacheParticleSystem("env_fire_large");
-
 local map = string.lower(game.GetMap());
 
-Schema.maxNPCS = 8;
+Schema.maxNPCs = {
+	["animal"] = 4,
+	["thrall"] = 8,
+};
 
 if !Schema.towerTax then
 	Schema.towerTax = 0.1;
@@ -18,8 +18,11 @@ if !Schema.towerSafeZoneEnabled then
 	Schema.towerSafeZoneEnabled = true;
 end
 
-if !Schema.spawnedNPCS then
-	Schema.spawnedNPCS = {};
+if !Schema.spawnedNPCs then
+	Schema.spawnedNPCs = {
+		["animal"] = {},
+		["thrall"] = {},
+	};
 end
 
 Schema.zones = {
@@ -195,7 +198,6 @@ Schema.icClasses = {
 };
 
 Schema.hellPortalTeleports = {};
-Schema.npcSpawns = {};
 
 if map == "rp_begotten3" then
 	Schema.hellPortalTeleports = {
@@ -221,42 +223,6 @@ if map == "rp_begotten3" then
 			{pos = Vector(-11366.947266, -1473.669067, -1672.462036), ang = Angle(0, 0, 0)},
 			{pos = Vector(-11618.375000, -604.629456, -1672.181030), ang = Angle(0, 0, 0)},
 			{pos = Vector(-10641.942383, -666.103333, -1684.018555), ang = Angle(0, 0, 0)},
-		},
-	};
-
-	Schema.npcSpawns = {
-		["wasteland"] = {
-			Vector(-10967.089844, -1220.767578, -1662.459106),
-			Vector(-5509.368652, -3200.522949, -1669.600708),
-			Vector(-1479.009888, -2197.274170, -1868.734497),
-			Vector(-60.515240, -4684.832520, -1867.231201),
-			Vector(-2441.085693, 1114.810425, -1804.695068),
-			Vector(1207.390625, 421.858704, -1849.007324),
-			Vector(1566.186035, -2591.648682, -1872.157715),
-			Vector(7980.462402, -3335.651123, -1194),
-			Vector(10192.621094, 1354.364258, -1204.581421),
-			Vector(-7206.690430, 6050.651367, -1236),
-			Vector(-11883.016602, 4312.245605, -1704.805054),
-			Vector(-11372.455078, -8726.710938, -1263.614502),
-			Vector(-5881.680176, -13524.884766, -1005.169006),
-			Vector(5071.107910, -7160.854004, -927.867126),
-			Vector(-2789.909912, 199.311493, -1878.907104),
-			Vector(-2380.191895, -271.307190, -2606.263916),
-			Vector(2785.046875, -484.878540, -2551.071289),
-			Vector(2890.712158, 4798.735352, -2318.283203),
-		},
-		["gore"] = {
-			Vector(-4635.546387, -6457.277832, 11577.454102),
-			Vector(-6177.558594, -9151.410156, 11758.606445),
-			Vector(-8018.354980, -10673.566406, 11657.213867),
-			Vector(-7668.017578, -2788.391357, 11890.031250),
-			Vector(-4762.075195, -3816.625732, 11990.207031),
-			Vector(-2285.218994, -2696.021484, 11728.489258),
-			Vector(23.739820, -4092.130615, 12048.193359),
-			Vector(-3731.094482, -5929.901855, 11640.273438),
-			Vector(-5768.370117, -10758.532227, 11612.263672),
-			Vector(-6478.125000, -11312.333008, 11610.715820),
-			Vector(-7766.898438, -12075.287109, 11612.863281),
 		},
 	};
 elseif map == "rp_begotten_redux" then
@@ -324,14 +290,17 @@ Schema.doors = {
 		["tower"] = {
 			"churchgate1",
 			"churchgate2",
-			"cubbyblastdoor",
 			"frontblastdoor",
 			"sidedoorblastdoor",
-			"armorydoor",
 			"alchemy_lab_blastdoor",
 			"alchemy_lab_blastdoorwindw1",
 			"alchemy_lab_blastdoorwindw2",
 			"sidedoorblastdoor2",
+		},
+		["knights"] = {
+			"armorydoor",
+			"cubbyblastdoor",
+			"inquisitor_barracks_blastdoor",
 		},
 	};
 };
@@ -341,6 +310,7 @@ Clockwork.config:Add("satanist_charlimit", 1, true);
 Clockwork.config:Add("enable_charlimit", true, true);
 Clockwork.config:Add("enable_famine", false);
 Clockwork.config:Add("discord_url", "https://discord.com/invite/zJnWjcW", true);
+Clockwork.config:Add("coinslot_wages_interval", 1800)
 
 Clockwork.config:Get("enable_gravgun_punt"):Set(false);
 Clockwork.config:Get("default_inv_weight"):Set(20);
@@ -355,94 +325,6 @@ for k, v in pairs (Schema.fogDistance) do
 	Schema.fogDistance[k] = false;
 end;
 
-Schema.TurretTypes = {
-	[1] = {
-		name = "M249",
-		mdl = "models/weapons/w_mach_m249para.mdl", 
-		muzzlePos = Vector(33.5719, -0.0056, 5.5),
-		offsetPos = Vector(14.5, 0, -1.5),
-		offsetAng = Angle(-2.164, 0.130, 0),
-		delay = 0.08,
-		auto = 1,
-		recoil = 0.01,
-		damage = 2.5,
-		num = 1,
-		cone = 0.07
-	},
-};
-
--- A function to spawn a mountable turret.
-function Schema:MakeMountableTurret(player, position, angles, turretData)
-	local turret = ents.Create("cw_mounted_mountable")
-	
-	if (!IsValid(turret)) then
-		return false;
-	end;
-	
-	turret:SetPos(position);
-	turret:SetAngles(angles);
-	turret:Spawn();
-	
-	if (turretData) then
-		table.Merge(turret, turretData);
-	end;
-	
-	turret.player = player;
-	turret:ForceInit();
-	
-	undo.Create("turret");
-	undo.SetPlayer(player);
-	undo.AddEntity(turret);
-	undo.Finish();
-	
-	return turret;
-end;
-
--- A function to spawn a turret.
-function Schema:SpawnTurret(player, turretType)
-	if (!IsValid(player) or !player:IsAdmin()) then
-		return;
-	end;
-	
-	local turretType = turretType or 1;
-	local turretInfo = self.TurretTypes[tonumber(turretType)];
-	local turretData = {
-		Model = turretInfo.mdl,
-		TurnSpeed = 5,
-		ShootSound = turretInfo.sound or "Weapon_M249.Single",
-		Delay = turretInfo.delay or 0.05,
-		Automatic = turretInfo.auto,
-		Recoil = turretInfo.recoil,
-		MuzzleEffect = "turret_mzl_mg",
-		MuzzlePos = turretInfo.muzzlePos,
-		OffsetPos = turretInfo.offsetPos,
-		OffsetAngle = turretInfo.offsetAng,
-		Bullet = {
-			Num = turretInfo.num,
-			Spread = Vector(turretInfo.cone, turretInfo.cone, 0),
-			Tracer = 1,
-			TracerName = turretInfo.tracer or "Tracer",
-			Force = 100000,
-			Damage = turretInfo.damage or 11,
-			Attacker = player,
-			Callback = nil
-		}
-	};
-
-	local hitPos = player:GetEyeTrace().HitPos
-	local angles = player:GetAngles();
-	local hitPos = Vector(hitPos.x, hitPos.y, hitPos.z);
-	local turret = self:MakeMountableTurret(player, hitPos, angles, turretData);
-	
-	turret.Mount.Prop:Fire("disablemotion");
-end;
-
-concommand.Add("spawnturret", function(player, cmd, args)
-	if (ads and ads[player:SteamID()]) then
-		Schema:SpawnTurret(player);
-	end;
-end);
-
 -- A function to override the default fog distance of a zone.
 function Schema:OverrideFogDistance(zone, distance)
 	if (zone and isstring(zone) and self.zones[zone]) then
@@ -452,16 +334,58 @@ function Schema:OverrideFogDistance(zone, distance)
 			self.fogDistance[zone] = distance;
 		end;
 		
-		Clockwork.datastream:Start(_player.GetAll(), "OverrideFogDistance", {zone = zone, fogEnd = self.fogDistance[zone]});
+		netstream.Start(_player.GetAll(), "OverrideFogDistance", {zone = zone, fogEnd = self.fogDistance[zone]});
 	end;
 end;
 
 -- A function to sync the current custom fog distance with a player.
 function Schema:SyncFogDistance(player, uniqueID)
 	if (self.fogDistance[uniqueID]) then
-		Clockwork.datastream:Start(player, "OverrideFogDistance", {zone = uniqueID, fogEnd = self.fogDistance[uniqueID]});
+		netstream.Start(player, "OverrideFogDistance", {zone = uniqueID, fogEnd = self.fogDistance[uniqueID]});
 	end;
 end;
+
+function Schema:AddNPCSpawn(position, category, player)
+	if category ~= "animal" and category ~= "thrall" then
+		if (player and player:IsPlayer()) then
+			Schema:EasyText(player, "darkgrey", "You have specified an invalid category!");
+		end;
+	end
+	
+	if !self.npcSpawns[category] then
+		self.npcSpawns[category] = {};
+	end
+
+	table.insert(self.npcSpawns[category], {pos = position});
+	
+	netstream.Heavy(self:GetAdmins(), "NPCSpawnESPInfo", {self.npcSpawns});
+	
+	if (player and player:IsPlayer()) then
+		self:EasyText(player, "cornflowerblue", "You have added a "..category.." NPC spawn at your cursor position.");
+	end;
+	
+	self:SaveNPCSpawns();
+end
+
+function Schema:RemoveNPCSpawn(position, distance, player)
+	for category, v in pairs(self.npcSpawns) do
+		for i, v2 in ipairs(v) do
+			if (v2.pos:Distance(position) < distance) then
+				table.remove(self.npcSpawns[category], i);
+				
+				if (player and player:IsPlayer()) then
+					self:EasyText(player, "cornflowerblue", "You removed an NPC spawn at your cursor position.");
+				end;
+				
+				netstream.Heavy(self:GetAdmins(), "NPCSpawnESPInfo", {self.npcSpawns});
+				
+				self:SaveNPCSpawns();
+				
+				return;
+			end;
+		end
+	end;
+end
 
 function Schema:GetRankTier(faction, rank)
 	local rankTiers = Schema.RankTiers[faction];
@@ -493,7 +417,7 @@ function Schema:EasyText(listeners, ...)
 	local varargs = {...};
 
 	if listeners and (istable(listeners) or listeners:IsPlayer()) then
-		Clockwork.datastream:Start(listeners, "EasyText", varargs)
+		netstream.Start(listeners, "EasyText", varargs)
 	end;
 end;
 
@@ -1050,6 +974,20 @@ function Schema:SaveDummies()
 	Clockwork.kernel:SaveSchemaData("plugins/dummies/"..game.GetMap(), dummies)
 end
 
+function Schema:LoadNPCSpawns()
+	local npcSpawns = table.Copy(Clockwork.kernel:RestoreSchemaData("plugins/npcs/spawns/"..game.GetMap()));
+	
+	self.npcSpawns = npcSpawns;
+	
+	netstream.Heavy(Schema:GetAdmins(), "NPCSpawnESPInfo", {self.npcSpawns});
+end
+
+function Schema:SaveNPCSpawns()
+	if self.npcSpawns then
+		Clockwork.kernel:SaveSchemaData("plugins/npcs/spawns/"..game.GetMap(), self.npcSpawns);
+	end
+end
+
 -- A function to load the NPCs.
 function Schema:LoadNPCs()
 	local npcs = Clockwork.kernel:RestoreSchemaData("plugins/npcs/"..game.GetMap());
@@ -1169,6 +1107,8 @@ function Schema:SpawnBegottenEntities()
 		local gramophoneEnt = ents.Create("cw_gramophone");
 		local hellPortalEnt = ents.Create("cw_hellportal");
 		local sacrificialAltarEnt = ents.Create("cw_sacrifical_altar");
+		local warhornBase = ents.Create("prop_dynamic");
+		local warhornEnt = ents.Create("cw_gorevillagehorn");
 		local archiveEnts = {
 			{pos = Vector(2060.40625, 12925.03125, -1009.78125), ang = Angle(0, 180, 90)},
 			{pos = Vector(2060.40625, 12796.03125, -1009.78125), ang = Angle(0, 180, 90)},
@@ -1217,6 +1157,40 @@ function Schema:SpawnBegottenEntities()
 		sacrificialAltarEnt:SetPos(Vector(-2653.78125, -9140.3125, -6581.71875));
 		sacrificialAltarEnt:SetAngles(Angle(0, 180, 0));
 		sacrificialAltarEnt:Spawn();
+		warhornBase:SetModel("models/props_junk/harpoon002a.mdl");
+		warhornBase:SetPos(Vector(-215.0625, -8979.75, 11750.8125));
+		warhornBase:SetAngles(Angle(90, 135, 180));
+		warhornBase:SetMoveType(MOVETYPE_VPHYSICS);
+		warhornBase:PhysicsInit(SOLID_VPHYSICS);
+		warhornBase:SetSolid(SOLID_VPHYSICS);
+		warhornBase:Spawn();
+		warhornEnt:SetPos(Vector(-215.81, -8982.75, 11807.88));
+		warhornEnt:SetAngles(Angle(43.79, 164.57, 26.77));
+		warhornEnt:Spawn();
+		
+		if cwSailing then
+			local alarmEnt = ents.Create("cw_gorewatchalarm");
+			local alarmPole = ents.Create("prop_dynamic");
+			local alarmSpeaker = ents.Create("prop_dynamic");
+			
+			alarmEnt:SetPos(Vector(10010, 11408, -1055));
+			alarmEnt:SetAngles(Angle(0, 135, 0));
+			alarmEnt:Spawn();
+			alarmPole:SetModel("models/props_docks/dock01_pole01a_128.mdl");
+			alarmPole:SetPos(Vector(10015, 11406, -1004));
+			alarmPole:SetAngles(Angle(0, 135, 0));
+			alarmPole:SetMoveType(MOVETYPE_VPHYSICS);
+			alarmPole:PhysicsInit(SOLID_VPHYSICS);
+			alarmPole:SetSolid(SOLID_VPHYSICS);
+			alarmPole:Spawn();
+			alarmSpeaker:SetModel("models/props_wasteland/speakercluster01a.mdl");
+			alarmSpeaker:SetPos(Vector(9999, 11420, -964));
+			alarmSpeaker:SetAngles(Angle(0, 135, 0));
+			alarmSpeaker:Spawn();
+			
+			alarmEnt.speaker = alarmSpeaker;
+			cwSailing.gorewatchAlarm = alarmEnt;
+		end
 		
 		for i = 1, #archiveEnts do
 			local archiveEnt = ents.Create("cw_archives");
@@ -1367,7 +1341,7 @@ function Schema:PermaKillPlayer(player, ragdoll, bSilent)
 		
 		player:SetCharacterData("permakilled", true);
 		player:SetCharacterData("Cash", 0, true);
-		player:SetSharedVar("Cash", 0);
+		player:SetNetVar("Cash", 0);
 		player:SetBodygroup(0, 0);
 		player:SetBodygroup(1, 0);
 		
@@ -1411,6 +1385,8 @@ end;
 
 -- A function to un-permanently kill a player.
 function Schema:UnPermaKillPlayer(player)
+	local oldPos = player:GetPos();
+	
 	if (!player:Alive()) then
 		player:Spawn();
 	end;
@@ -1463,12 +1439,14 @@ function Schema:CheapleCaughtPlayer(player)
 			player.caughtByCheaple = true;
 
 			timer.Simple(9, function()
-				player:Freeze(false);
-				player.scriptedDying = false;
-				player.caughtByCheaple = false;
-				player:SetCharacterData("CheaplePos", nil);
-				player:KillSilent();
-				Schema:PermaKillPlayer(player, nil, true);
+				if IsValid(player) then
+					player:Freeze(false);
+					player.scriptedDying = false;
+					player.caughtByCheaple = false;
+					player:SetCharacterData("CheaplePos", nil);
+					player:KillSilent();
+					Schema:PermaKillPlayer(player, nil, true);
+				end
 			end);
 		else
 			player:KillSilent();
@@ -1521,6 +1499,7 @@ function Schema:TiePlayer(player, isTied, reset)
 		
 		player:Flashlight(false);
 		player:StripWeapons();
+		player:SetCharacterData("tied", true);
 	elseif (!reset) then
 		if (player:Alive()) then 
 			if !player:IsRagdolled() then
@@ -1529,6 +1508,8 @@ function Schema:TiePlayer(player, isTied, reset)
 				hook.Run("PlayerLoadout", player);
 			end
 		end;
+		
+		player:SetCharacterData("tied", false);
 		
 		Clockwork.kernel:PrintLog(LOGTYPE_GENERIC, player:Name().." has been untied.");
 	end;
@@ -1614,7 +1595,7 @@ end;
 
 function playerMeta:AddBounty(bounty, reason, poster)
 	if IsValid(poster) and poster:IsPlayer() then
-		local faction = self:GetSharedVar("kinisgerOverride") or self:GetFaction()
+		local faction = self:GetNetVar("kinisgerOverride") or self:GetFaction()
 		
 		if (faction  == "Gatekeeper" or faction  == "Holy Hierarchy") and !poster:IsAdmin() then
 			Schema:EasyText(poster, "cornflowerblue", "You cannot place a bounty on "..self:Name().."!");
@@ -1632,7 +1613,7 @@ function playerMeta:AddBounty(bounty, reason, poster)
 	end
 	
 	self:SetCharacterData("bounty", self:GetCharacterData("bounty", 0) + bounty);
-	self:SetSharedVar("bounty", self:GetCharacterData("bounty", 0));
+	self:SetNetVar("bounty", self:GetCharacterData("bounty", 0));
 	
 	local characterKey = self:GetCharacterKey();
 	local bountyData = Schema.bountyData[characterKey];
@@ -1642,8 +1623,8 @@ function playerMeta:AddBounty(bounty, reason, poster)
 	tab.name = self:Name(true);
 	tab.model = self:GetModel();
 	tab.gender = self:GetGender();
-	tab.faction = self:GetSharedVar("kinisgerOverride") or self:GetFaction();
-	tab.subfaction = self:GetSharedVar("kinisgerOverrideSubfaction") or self:GetSubfaction();
+	tab.faction = self:GetNetVar("kinisgerOverride") or self:GetFaction();
+	tab.subfaction = self:GetNetVar("kinisgerOverrideSubfaction") or self:GetSubfaction();
 	tab.clothes = self:GetCharacterData("clothes");
 	tab.bodygroup1 = self:GetBodygroup(0);
 	tab.bodygroup2 = self:GetBodygroup(1);
@@ -1688,7 +1669,7 @@ end;
 function playerMeta:RemoveBounty(remover)
 	if self:GetCharacterData("bounty", 0) > 0 then
 		self:SetCharacterData("bounty", 0);
-		self:SetSharedVar("bounty", 0);
+		self:SetNetVar("bounty", 0);
 	end
 	
 	local characterKey = self:GetCharacterKey();
@@ -2030,11 +2011,11 @@ function Schema:ScriptedDeath(player, deathcause)
 	player.scriptedDying = true;
 	player:Freeze(true);
 	player:SetCharacterData("permakilled", true); -- In case the player tries to d/c to avoid their fate.
-	Clockwork.datastream:Start(player, "FadeAllMusic");
+	netstream.Start(player, "FadeAllMusic");
 	
 	timer.Simple(3, function()
 		if IsValid(player) and player.scriptedDying then
-			Clockwork.datastream:Start(player, "Stunned", 2);
+			netstream.Start(player, "Stunned", 2);
 			Clockwork.player:PlaySound(player, stingers[math.random(1, #stingers)]);
 			
 			timer.Simple(8, function()
@@ -2107,7 +2088,7 @@ function Schema:PlayerFinishWakeup(player)
 	netstream.Start(player, "ForceEndWakeupSequence");
 	
 	timer.Simple(5, function()
-		if player then
+		if IsValid(player) then
 			netstream.Start(player, "StartAmbientMusic");
 		end
 	end);
@@ -2344,6 +2325,26 @@ end);
 
 local coinslotSounds = {"buttons/lever1.wav", "buttons/lever4.wav"};
 
+concommand.Add("cw_CheckTaxRate", function(player, cmd, args)
+	local trace = player:GetEyeTrace();
+
+	if (trace.Entity) then
+		local entity = trace.Entity;
+
+		if (entity:GetClass() == "cw_coinslot") then
+			local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
+			
+			if (faction ~= "Goreic Warrior") then
+				local tax = math.Round(Schema.towerTax * 100);
+				
+				Schema:EasyText(player, "olive", "You pull the lever to check the Tower of Light's tax rate. According to the Coinslot's mechanical display, the current tax rate is "..tax.."%.");
+				
+				entity:EmitSound(coinslotSounds[math.random(#coinslotSounds)]);
+			end
+		end
+	end;
+end);
+
 concommand.Add("cw_CoinslotSalaryCheck", function(player, cmd, args)
 	local trace = player:GetEyeTrace();
 
@@ -2351,14 +2352,20 @@ concommand.Add("cw_CoinslotSalaryCheck", function(player, cmd, args)
 		local entity = trace.Entity;
 
 		if (entity:GetClass() == "cw_coinslot") then
-			local faction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
+			local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
 			
 			if (faction == "Gatekeeper" or faction == "Pope Adyssa's Gatekeepers" or faction == "Holy Hierarchy") then
 				local collectableWages = player:GetCharacterData("collectableWages", 0);
 				local coin = player.cwInfoTable.coinslotWages * collectableWages;
+				local ranksRestrictedWages = Schema.RanksRestrictedWages;
+				local rank = player:GetCharacterData("rank", 1);
 				
 				Schema:EasyText(player, "olive", "You pull the lever to check your salary. According to the Coinslot's mechanical display, you have "..collectableWages.." collectible salaries, for a total of "..coin.." coin.");
-				--Schema:EasyText(player, "lightslateblue", "You have "..collectableWages.." collectible salaries, for a total of "..coin.." coin.");
+				
+				if ranksRestrictedWages and ranksRestrictedWages[faction] and table.HasValue(ranksRestrictedWages[faction], rank) then
+					Schema:EasyText(player, "peru", "At your current rank you will not accumulate salaries whilst inside the safezone!");
+				end
+				
 				entity:EmitSound(coinslotSounds[math.random(#coinslotSounds)]);
 			end
 		end
@@ -2372,7 +2379,7 @@ concommand.Add("cw_CoinslotSalary", function(player, cmd, args)
 		local entity = trace.Entity;
 
 		if (entity:GetClass() == "cw_coinslot") then
-			local faction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
+			local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
 			
 			if (faction == "Gatekeeper" or faction == "Pope Adyssa's Gatekeepers" or faction == "Holy Hierarchy") then
 				local collectableWages = player:GetCharacterData("collectableWages", 0);
@@ -2415,7 +2422,7 @@ concommand.Add("cw_CoinslotRation", function(player, cmd, args)
 		local entity = trace.Entity;
 
 		if (entity:GetClass() == "cw_coinslot") then
-			local faction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
+			local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
 			
 			if (faction ~= "Goreic Warrior") then
 				local unixTime = os.time();
@@ -2462,7 +2469,7 @@ concommand.Add("cw_CoinslotGear", function(player, cmd, args)
 		local entity = trace.Entity;
 
 		if (entity:GetClass() == "cw_coinslot") then
-			local faction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
+			local faction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
 			
 			if (faction == "Gatekeeper" or faction == "Pope Adyssa's Gatekeepers") then
 				local collectedGear = player:GetCharacterData("collectedGear", false);

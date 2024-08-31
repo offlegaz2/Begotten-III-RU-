@@ -65,7 +65,7 @@ end;
 
 function cwDueling:PlayerDisconnected(player)
 	if self:PlayerIsDueling(player) then
-		if IsValid(player.opponent) and !player.duelStatue then
+		if IsValid(player.opponent) and (!player.duelData or !player.duelData.duelStatue) then
 			--self:DuelAborted(player.opponent, player);
 			self:DuelCompleted(player.opponent, player);
 		end
@@ -124,26 +124,41 @@ function cwDueling:PlayerUse(player, entity)
 end;
 
 function cwDueling:PlayerEnteredDuel(player, arena, spawnPos, spawnAngles)
-	Clockwork.datastream:Start(player, "SetPlayerDueling", true);
+	netstream.Start(player, "SetPlayerDueling", true);
 	Clockwork.limb:CacheLimbs(player, true);
 	
-	player:Spawn();	
+	local duelData = {};
+	
+	duelData.cachedPos = player:GetPos();
+	duelData.cachedAngles = player:GetAngles();
+	duelData.cachedHP = player:Health();
+	
+	player.duelData = duelData;
+
+	if !player:Alive() then
+		player:Spawn();
+	end
+	
+	if player:IsRagdolled() then
+		Clockwork.player:SetRagdollState(player, RAGDOLL_NONE);
+	end
+	
 	player:ScreenFade(SCREENFADE.IN, Color(0, 0, 0, 255), 5, 0);
 	player:SetPos(spawnPos);
 	player:SetEyeAngles(spawnAngles);
 	player:SetHealth(player:GetMaxHealth());
-	
-	if player.duelData then
-		player.duelData.duelStatue = nil;
-	end
-	
+	player:Freeze(true);
+
 	if player:GetLocalVar("Hatred") then
-		player:SetLocalVar("Hatred", 0);
+		player:SetLocalVar("Hatred", 75);
 	end
 	
 	-- Start battle music after players have faded in.
-	timer.Simple(5, function()
-		Clockwork.datastream:Start(player, "StartBattleMusicNoLimit");
+	timer.Simple(3, function()
+		if IsValid(player) then
+			netstream.Start(player, "StartBattleMusicNoLimit");
+			player:Freeze(false);
+		end;
 	end);
 end
 
@@ -152,27 +167,27 @@ function cwDueling:PlayerExitedDuel(player)
 	player:ScreenFade(SCREENFADE.IN, Color(0, 0, 0, 255 ), 5, 0);
 	player:SetNWInt("freeze", 0);
 	
+	if !player:Alive() then
+		player:Spawn();
+	end
+	
+	if player:IsRagdolled() then
+		Clockwork.player:SetRagdollState(player, RAGDOLL_NONE);
+	end
+	
 	local duelData = player.duelData;
 
 	if duelData then
-		player:Spawn();
 		player:SetPos(duelData.cachedPos + Vector(0, 0, 8));
 		player:SetEyeAngles(duelData.cachedAngles);
 		
 		Clockwork.limb:RestoreLimbsFromCache(player);
 		
-		timer.Simple(0.1, function()
-			if IsValid(player) then
-				player:SetPos(duelData.cachedPos + Vector(0, 0, 8));
-				player:SetEyeAngles(duelData.cachedAngles);
-			end
-		end);
-		
 		player:SetHealth(player.duelData.cachedHP);
 	end
 	
-	if player.distortedRingFired then
-		player.distortedRingFired = nil;
+	if player.distortedRingFiredDuel then
+		player.distortedRingFiredDuel = nil;
 	end
 	
 	if player:GetCharacterData("Hatred") then
@@ -181,5 +196,5 @@ function cwDueling:PlayerExitedDuel(player)
 	
 	player.opponent = nil;
 	
-	Clockwork.datastream:Start(player, "SetPlayerDueling", false);
+	netstream.Start(player, "SetPlayerDueling", false);
 end

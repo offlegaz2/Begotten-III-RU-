@@ -128,6 +128,7 @@ function cwMedicalSystem:PlayerThink(player, curTime, infoTable, alive, initiali
 												--if (bloodLevel <= self.lethalBloodLoss) then
 													player:DeathCauseOverride("Bled out in a puddle of their own blood.");
 													player:Kill();
+													Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, player:Name().." has bled out!")
 													--player:TakeDamage(99999, player, player);
 													--player:SetCrouchedWalkSpeed(1);
 												--[[else
@@ -166,13 +167,7 @@ function cwMedicalSystem:PlayerThink(player, curTime, infoTable, alive, initiali
 									
 									if not hasInjury then
 										if math.random(1, 3) == 1 then
-											local clothesItem = player:GetClothesEquipped();
-											
-											if clothesItem and clothesItem.attributes and table.HasValue(clothesItem.attributes, "increased_regeneration") then
-												player:SetHealth(health + 3);
-											else
-												player:SetHealth(health + 1);
-											end
+											player:SetHealth(health + 1);
 										end
 									end
 								end
@@ -257,6 +252,7 @@ function cwMedicalSystem:PlayerThink(player, curTime, infoTable, alive, initiali
 										if (bloodLevel <= self.lethalBloodLoss) then
 											player:DeathCauseOverride("Bled out in a puddle of their own blood.");
 											player:Kill();
+											Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, player:Name().." has bled out!")
 											--player:TakeDamage(99999, player, player);
 											--player:SetCrouchedWalkSpeed(1);
 										else
@@ -403,12 +399,12 @@ function cwMedicalSystem:PlayerThink(player, curTime, infoTable, alive, initiali
 				end
 				
 				player:SetCharacterData("diseases", diseases);
-				player:SetSharedVar("diseases", diseaseNetworkStrings);
-				player:SetSharedVar("symptoms", player:GetSymptoms());
+				player:SetNetVar("diseases", diseaseNetworkStrings);
+				player:SetNetVar("symptoms", player:GetSymptoms());
 				
 				if not plyTab.dyingOfDisease and not player:IsRagdolled() then
 					-- Make the character do something related to their symptom.
-					local symptoms = player:GetSharedVar("symptoms", {});
+					local symptoms = player:GetNetVar("symptoms", {});
 					local valid_symptoms = {};
 					
 					for i = 1, #symptoms do
@@ -556,7 +552,7 @@ function cwMedicalSystem:PlayerThink(player, curTime, infoTable, alive, initiali
 							messupChance = (messupChance or 0) + 30;
 						end
 						
-						if player:GetSharedVar("tied") ~= 0 then
+						if player:GetNetVar("tied") ~= 0 then
 							messupChance = (messupChance or 0) + 40;
 						end
 						
@@ -681,6 +677,7 @@ function cwMedicalSystem:PostCalculatePlayerDamage(player, hitGroup, damageInfo)
 						--if (bloodLevel <= self.lethalBloodLoss) then
 							player:DeathCauseOverride("Bled out in a puddle of their own blood.");
 							player:Kill();
+							Clockwork.kernel:PrintLog(LOGTYPE_CRITICAL, player:Name().." has bled out!")
 							--player:TakeDamage(99999, player, player);
 							--player:SetCrouchedWalkSpeed(1);
 						--[[else
@@ -849,7 +846,7 @@ function cwMedicalSystem:PostCalculatePlayerDamage(player, hitGroup, damageInfo)
 	
 	if (player:Alive() and damageInfo:GetDamage() > 5) then
 		for i = 1, math.random(1, 5) do
-			Clockwork.datastream:Start(player, "ScreenBloodEffect");
+			netstream.Start(player, "ScreenBloodEffect");
 		end;
 	end;
 end;
@@ -931,8 +928,10 @@ end;
 
 -- Called when a player is given an injury.
 function cwMedicalSystem:PlayerGivenInjury(player, uniqueID)
-	if (self.cwInjuryTable[uniqueID] and self.cwInjuryTable[uniqueID].OnRecieve) then
-		self.cwInjuryTable[uniqueID]:OnRecieve(player);
+	local injuryTable = self.cwInjuryTable[uniqueID];
+
+	if (injuryTable and injuryTable.OnReceive) then
+		injuryTable:OnReceive(player);
 	end;
 	
 	hook.Run("RunModifyPlayerSpeed", player, player.cwInfoTable, true)
@@ -940,8 +939,10 @@ end;
 
 -- Called when an injury is taken from a player.
 function cwMedicalSystem:PlayerInjuryTaken(player, uniqueID)
-	if (self.cwInjuryTable[uniqueID] and self.cwInjuryTable[uniqueID].OnTake) then
-		self.cwInjuryTable[uniqueID]:OnTake(player);
+	local injuryTable = self.cwInjuryTable[uniqueID];
+	
+	if (injuryTable and injuryTable.OnTake) then
+		injuryTable:OnTake(player);
 	end;
 	
 	hook.Run("RunModifyPlayerSpeed", player, player.cwInfoTable, true)
@@ -1102,6 +1103,14 @@ end;
 	end;
 end;]]--
 
+function cwMedicalSystem:GetPlayerSkinOverride(player)
+	if player:HasDisease("leprosy") then
+		if string.find(player:GetModel() or "", "models/begotten/heads") then
+			return player:SkinCount() - 1;
+		end
+	end
+end
+
 -- Called when a player has been unragdolled.
 function cwMedicalSystem:PlayerUnragdolled(player, state, ragdoll)
 	Clockwork.player:SetAction(player, "die", false);
@@ -1112,6 +1121,15 @@ end;
 function cwMedicalSystem:PlayerRagdolled(player, state, ragdoll)
 	--Clockwork.player:SetAction(player, "die", false);
 	--Clockwork.player:SetAction(player, "die_bleedout", false);
+end;
+
+-- Called when the local player attempts to get up.
+function cwMedicalSystem:PlayerCanGetUp(player)
+	local action = Clockwork.player:GetAction(player);
+	
+	if action == "die" or action == "die_bleedout" then
+		return false;
+	end
 end;
 
 -- Called when a player attempts to use an item.
@@ -1162,7 +1180,7 @@ function cwMedicalSystem:ModifyPlayerSpeed(player, infoTable, action)
 	else
 		local injuries = self:GetInjuries(player);
 		
-		if injuries[HITGROUP_LEFTLEG]["broken_bone"] or injuries[HITGROUP_RIGHTLEG]["broken_bone"] then
+		if injuries and (injuries[HITGROUP_LEFTLEG]["broken_bone"] or injuries[HITGROUP_RIGHTLEG]["broken_bone"]) then
 			infoTable.crouchedWalkSpeed = math.max(1, infoTable.crouchedWalkSpeed * 0.8);
 			infoTable.walkSpeed = math.max(1, infoTable.walkSpeed * 0.5);
 			infoTable.runSpeed = math.max(1, infoTable.walkSpeed);

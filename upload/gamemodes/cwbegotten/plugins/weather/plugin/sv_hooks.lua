@@ -70,7 +70,7 @@ function cwWeather:PlayerThink(player, curTime, infoTable, alive, initialized, p
 	if plyTab.nextWeatherEffectCheck <= curTime then
 		plyTab.nextWeatherEffectCheck = curTime + weatherEffectCheckDelay;
 		
-		if !alive or plyTab.cwObserverMode or plyTab.cwWakingUp then return end;
+		if !alive or plyTab.cwObserverMode or plyTab.cwWakingUp or plyTab.opponent then return end;
 		
 		local lastZone = player:GetCharacterData("LastZone") or "wasteland";
 		local zoneTable = zones:FindByID(lastZone);
@@ -108,12 +108,32 @@ function cwWeather:PlayerThink(player, curTime, infoTable, alive, initialized, p
 				end
 			end
 		
-			if weather == "acidrain" then
+			if weather == "thunderstorm" and cwMedicalSystem and !player:HasDisease("common_cold") then
+				local chance = 400;
+				
+				if player:HasTrait("marked") then
+					chance = 200;
+				elseif player:HasBelief("sanitary") then
+					chance = 1000;
+				end
+				
+				if math.random(1, chance) == 1 then
+					player:GiveDisease("common_cold");
+					
+					Clockwork.kernel:PrintLog(LOGTYPE_MAJOR, player:Name().." has been infected with the common cold from being outside in a thunderstorm!");
+				end
+			elseif weather == "acidrain" then
 				local armorItem = player:GetClothesEquipped();
 				local helmetItem = player:GetHelmetEquipped();
 				local shouldBurn = false;
 				
-				if !armorItem or (armorItem:GetCondition() or 0) <= 0 then
+				if player.spawnTime then
+					if CurTime() < player.spawnTime + 30 then
+						return;
+					end
+				end
+				
+				if !shouldBurn and (!armorItem or (armorItem:GetCondition() or 0) <= 0) then
 					shouldBurn = true;
 				end
 				
@@ -125,7 +145,7 @@ function cwWeather:PlayerThink(player, curTime, infoTable, alive, initialized, p
 					end
 				end
 				
-				if !cwBeliefs or !player:HasBelief("ingenuity_finisher") then
+				if !cwBeliefs or !player:HasBelief("ingenuity_finisher") or v.unrepairable then
 					local hasScourRust = cwBeliefs and player:HasBelief("scour_the_rust");
 				
 					for k, v in pairs(player.equipmentSlots) do
@@ -222,16 +242,14 @@ end
 
 function cwWeather:WeatherChanged(weather, oldWeather)
 	if weather == "bloodstorm" or oldWeather == "bloodstorm" then
-		if Schema.spawnedNPCS then
-			for i = 1, #Schema.spawnedNPCS do
-				local entity = ents.GetByIndex(Schema.spawnedNPCS[i]);
-				
-				if IsValid(entity) and entity:IsZombie() then
-					entity:Remove();
-				end
-			end
+		for i, index in ipairs(Schema.spawnedNPCs["thrall"]) do
+			local entity = ents.GetByIndex(index);
 			
-			Schema.spawnedNPCS = {};
+			if IsValid(entity) and (entity:IsNPC() or entity:IsNextBot()) then
+				entity:Remove();
+			end
 		end
+		
+		Schema.spawnedNPCs["thrall"] = {};
 	end
 end

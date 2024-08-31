@@ -44,7 +44,7 @@ function playerMeta:IsWeaponRaised(weapon)
 	end
 
 	if (table.HasValue(blockedWeapons, weapon:GetClass())) then
-		return true
+		return true, weapon;
 	end
 
 	-- This doesn't seem to be used currently so I'm disabling it for now.
@@ -134,4 +134,18 @@ end
 
 function PLUGIN:PlayerSetupDataTables(player)
 	player:DTVar("Bool", BOOL_WEAPON_RAISED, "WeaponRaised")
+end
+
+if CLIENT then
+	function PLUGIN:GetProgressBarInfoAction(action, percentage)
+		if (action == "raise") then
+			local raiseText = "RAISING...";
+
+			if (Clockwork.Client:IsWeaponRaised()) then
+				raiseText = "LOWERING..."
+			end;
+						
+			return {text = raiseText, percentage = percentage, flash = percentage < 10}
+		end
+	end
 end

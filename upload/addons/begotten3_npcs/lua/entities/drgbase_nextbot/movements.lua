@@ -8,7 +8,8 @@ local MultSpeed = CreateConVar("drgbase_multiplier_speed", "1", {FCVAR_ARCHIVE, 
 -- Getters/setters --
 
 function ENT:GetSpeed()
-	return self:GetNW2Float("DrGBaseSpeed")
+	--return self:GetNW2Float("DrGBaseSpeed")
+	return self.DrGBaseSpeed or self:Speed(true);
 end
 
 function ENT:Speed(scale)
@@ -480,15 +481,22 @@ if SERVER then
 	local function IsEntityClimbable(self, ent)
 		if ent:IsWorld() then return true
 		elseif not IsValid(ent) then return false end
-		if ent:GetClass() == "func_lod" then return true end
-		return self.ClimbProps and ent:GetClass() == "prop_physics" and ent:GetVelocity():IsZero()
+		local class = ent:GetClass();
+		if class == "func_lod" then return true end
+		return self.ClimbProps and (class == "prop_physics" or hook.Run("IsEntityClimbable", class)) and ent:GetVelocity():IsZero()
 	end
 	function ENT:FindLedge(propOnly)
 		if not self.ClimbLedges or (propOnly and not self.ClimbProps) then return end
 		local hull = self:TraceHull(self:GetForward()*self.LedgeDetectionDistance, {step = true})
 		if not hull.Hit then return end
-		if IsValid(hull.Entity) and hull.Entity:GetClass() == "prop_physics" then
-			if not self.ClimbProps then return end
+		if IsValid(hull.Entity) then
+			if hull.Entity:GetClass() == "prop_physics" then
+				if not self.ClimbProps then return end
+			elseif hull.Entity:GetClass() == "prop_door_rotating" then
+				self:EmitSound("physics/wood/wood_crate_impact_hard2.wav");
+				self:EmitSound("physics/wood/wood_panel_impact_hard1.wav", 100, math.random(70, 130));
+				self:HandleDoorDamage(hull.Entity);
+			end
 		elseif propOnly then return end
 		if IsEntityClimbable(self, hull.Entity) then
 			local up = self:TraceHull(self:GetUp()*self.ClimbLedgesMaxHeight+Vector(0, 0, self:Height()*1.1)).HitPos

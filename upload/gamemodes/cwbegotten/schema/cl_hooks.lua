@@ -97,36 +97,55 @@ function Schema:Initialize()
 end
 
 -- A function to start a sound.
-function Schema:StartSound(sound, volume, pitch, dsp)
-	if (!sound or type(sound) != "string") then
-		return;
-	end;
-	
-	if (Clockwork.Client.customSound) then
-		Clockwork.Client.customSound:Stop();
-		Clockwork.Client.customSound = nil;
-		
-		if (Clockwork.Client.customSoundOldDSP) then
-			Clockwork.Client.customSoundOldDSP = nil;
-		end;
-	end;
-	
-	local pitch = math.Clamp(tonumber(pitch), 30, 255) or 100;
-	local volume = tonumber(volume) or 1;
-	local dsp = tonumber(dsp) or 0;
-	
-	if (volume > 1) then
-		volume = volume / 100;
-	end;
-	
-	if (!Clockwork.Client.customSound) then
-		Clockwork.Client.customSound = CreateSound(Clockwork.Client, sound);
-		
-		if (Clockwork.Client.customSound and !Clockwork.Client.customSound:IsPlaying()) then
-			Clockwork.Client.customSound:SetDSP(dsp);
-			Clockwork.Client.customSound:PlayEx(volume, pitch);
-		end;
-	end;
+function Schema:StartSound(soundStr, volume, pitch, dsp)
+    if (!soundStr or type(soundStr) != "string") then
+        return;
+    end;
+    
+    if (Clockwork.Client.customSound) then
+        Clockwork.Client.customSound:Stop();
+        Clockwork.Client.customSound = nil;
+        
+        if (Clockwork.Client.customSoundOldDSP) then
+            Clockwork.Client.customSoundOldDSP = nil;
+        end;
+    end;
+    
+    local pitch = math.Clamp(tonumber(pitch), 30, 255) or 100;
+    local volume = tonumber(volume) or 1;
+    local dsp = tonumber(dsp) or 0;
+    
+    if (volume > 1) then
+        volume = volume / 100;
+    end;
+    
+    if (!Clockwork.Client.customSound) then
+        if not string.find(soundStr, "http") then
+            Clockwork.Client.customSound = CreateSound(Clockwork.Client, soundStr);
+            
+            if (Clockwork.Client.customSound and !Clockwork.Client.customSound:IsPlaying()) then
+                Clockwork.Client.customSound:SetDSP(dsp);
+                Clockwork.Client.customSound:PlayEx(volume, pitch);
+            end;
+        else
+            if pitch then
+                if tonumber(pitch or 0) > 1 then
+                    pitch = pitch / 100
+                end
+            end
+            sound.PlayURL(soundStr, "noplay noblock", function(station)
+                if (IsValid(station)) then
+                    Clockwork.Client.customSound = station
+
+                    station:SetPos(LocalPlayer():GetPos())
+
+                    station:SetVolume(volume)
+                    station:SetPlaybackRate(pitch)
+                    station:Play()
+                end
+            end)
+        end
+    end;
 end;
 
 -- A function to stop a sound.
@@ -315,7 +334,7 @@ function Schema:Think()
 	end
 end
 
-Clockwork.datastream:Hook("CheaplePos", function(data)
+netstream.Hook("CheaplePos", function(data)
 	if Clockwork.Client:HasTrait("followed") and Clockwork.Client:Alive() and not Schema.caughtByCheaple then
 		if IsValid(statichitman) and data then
 			statichitman:SetPos(data);
@@ -325,17 +344,17 @@ Clockwork.datastream:Hook("CheaplePos", function(data)
 	end
 end);
 
-Clockwork.datastream:Hook("PlayerCustomSoundCheck", function(data)
+netstream.Hook("PlayerCustomSoundCheck", function(data)
 	local soundPlaying = false;
 	
 	if (Clockwork.Client.customSound and Clockwork.Client.customSound:IsPlaying()) then
 		soundPlaying = true;
 	end;
 	
-	Clockwork.datastream:Start("ConfirmCustomSoundCheck", {soundPlaying});
+	netstream.Start("ConfirmCustomSoundCheck", {soundPlaying});
 end);
 
-Clockwork.datastream:Hook("StartCustomSound", function(data)
+netstream.Hook("StartCustomSound", function(data)
 	local sound = data[1];
 	local volume = data[2];
 	local pitch = data[3];
@@ -344,11 +363,11 @@ Clockwork.datastream:Hook("StartCustomSound", function(data)
 	Schema:StartSound(sound, volume, pitch, dsp)
 end);
 
-Clockwork.datastream:Hook("StopCustomSound", function(data)
+netstream.Hook("StopCustomSound", function(data)
 	Schema:StopSound();
 end);
 
-Clockwork.datastream:Hook("FadeOutCustomSound", function(data)
+netstream.Hook("FadeOutCustomSound", function(data)
 	if (type(data) == "table") then
 		data = data[1];
 	end;
@@ -356,21 +375,21 @@ Clockwork.datastream:Hook("FadeOutCustomSound", function(data)
 	Schema:FadeOut(data);
 end);
 
-Clockwork.datastream:Hook("CustomSoundChangeVolume", function(data)
+netstream.Hook("CustomSoundChangeVolume", function(data)
 	local newVolume = data[1];
 	local delta = data[2];
 
 	Schema:ChangeVolume(newVolume, delta);
 end);
 
-Clockwork.datastream:Hook("CustomSoundChangePitch", function(data)
+netstream.Hook("CustomSoundChangePitch", function(data)
 	local newPitch = data[1];
 	local delta = data[2];
 
 	Schema:ChangePitch(newPitch, delta);
 end);
 
-Clockwork.datastream:Hook("CustomSoundChangeDSP", function(data)
+netstream.Hook("CustomSoundChangeDSP", function(data)
 	local newDSP = data;
 	local reset = false;
 	
@@ -409,7 +428,7 @@ function Schema:EasyText(...)
 	Clockwork.chatBox:Add(nil, icon, unpack(args));
 end;
 
-Clockwork.datastream:Hook("EasyText", function(varargs)
+netstream.Hook("EasyText", function(varargs)
 	Schema:EasyText(unpack(varargs))
 end);
 
@@ -662,33 +681,107 @@ function Schema:PlayerAdjustCharacterScreenInfo(character, info)
 end
 
 -- Called when the post progress bar info is needed.
-function Schema:GetPostProgressBarInfo()
-	if (Clockwork.Client:Alive()) then
-		local action, percentage = Clockwork.player:GetAction(Clockwork.Client, true);
-
-		if (action == "mutilating") then
-			return {text = "You are harvesting meat from a corpse. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "skinning") then
-			return {text = "You are skinning an animal's corpse. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "reloading") then
-			local weaponName = Clockwork.Client:GetNetVar("cwProgressBarVerb") or "shot";
-			local ammoName = Clockwork.Client:GetNetVar("cwProgressBarItem") or "weapon";
-			
-			return {text = "You are reloading your "..weaponName.." with "..ammoName..". Click to cancel.", percentage = percentage, flash = percentage < 0}
-			--return {text = "You are reloading your weapon. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "building") then
-			return {text = "You are erecting a siege ladder.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "bloodTest") then
-			return {text = "You are testing someone's blood for corruption. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "helljaunting") then
-			return {text = "You are helljaunting away.", percentage = percentage, flash = percentage > 75};
-		end;
+function Schema:GetProgressBarInfoAction(action, percentage)
+	if (action == "mutilating") then
+		return {text = "You are harvesting meat from a corpse. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "skinning") then
+		return {text = "You are skinning an animal's corpse. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "reloading") then
+		local weaponName = Clockwork.Client:GetNetVar("cwProgressBarVerb") or "shot";
+		local ammoName = Clockwork.Client:GetNetVar("cwProgressBarItem") or "weapon";
+		
+		return {text = "You are reloading your "..weaponName.." with "..ammoName..". Click to cancel.", percentage = percentage, flash = percentage < 0}
+		--return {text = "You are reloading your weapon. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "building") then
+		return {text = "You are erecting a siege ladder.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "bloodTest") then
+		return {text = "You are testing someone's blood for corruption. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "hell_teleporting") then
+		return {text = "You are using dark magic to teleport to Hell. Click to cancel.", percentage = percentage, flash = percentage < 10};
 	end;
 end;
 
 function Schema:PlayerCanSeeDateTime()
     return false;
 end;
+
+function Schema:GetTargetPlayerName(player)
+	if Clockwork.Client:IsAdmin() and Clockwork.player:IsNoClipping(Clockwork.Client) then
+		return player:Name();
+	end
+
+	if player:GetSubfaction() == "Praeventor" then
+		local clientFaction = Clockwork.Client:GetFaction();
+		
+		if clientFaction ~= "Gatekeeper" and clientFaction ~= "Holy Hierarchy" then
+			return player:Name(true);
+		end
+	end
+	
+	return player:Name()
+end
+
+function Schema:OverrideTeamColor(player, bRecognized)
+	local clientFaction = Clockwork.Client:GetFaction();
+	local playerFaction = player:GetFaction();
+	local clothesItem = player:GetClothesEquipped();
+	local helmetItem = player:GetHelmetEquipped();
+	local teamColor;
+	
+	if Clockwork.Client:IsAdmin() and Clockwork.player:IsNoClipping(Clockwork.Client) then
+		return;
+	end
+
+	if bRecognized then
+		if playerFaction == "Gatekeeper" and clientFaction ~= "Gatekeeper" and clientFaction ~= "Holy Hierarchy" then
+			if player:GetSubfaction() == "Praeventor" then
+				if (!clothesItem or !clothesItem.faction or (clothesItem.faction and clothesItem.faction ~= playerFaction)) and (!helmetItem or !helmetItem.faction or (helmetItem.faction and helmetItem.faction ~= playerFaction)) then
+					teamColor = Color(200, 200, 200, 255);
+				end
+			end
+		elseif playerFaction == "Children of Satan" and clientFaction ~= "Children of Satan" then
+			if (!clothesItem or !clothesItem.faction or (clothesItem.faction and clothesItem.faction ~= playerFaction)) and (!helmetItem or !helmetItem.faction or (helmetItem.faction and helmetItem.faction ~= playerFaction)) then
+				local kinisgerOverride = player:GetNetVar("kinisgerOverride");
+				
+				if kinisgerOverride then
+					local classTable = Clockwork.class:GetStored()[kinisgerOverride];
+					
+					if classTable then
+						teamColor = _team.GetColor(classTable.index) or Color(200, 200, 200, 255);
+					else
+						teamColor = Color(200, 200, 200, 255);
+					end
+				else
+					teamColor = Color(200, 200, 200, 255);
+				end
+			end
+		end
+	else
+		if playerFaction == "Gatekeeper" and clientFaction ~= "Gatekeeper" and clientFaction ~= "Holy Hierarchy" then
+			if (!clothesItem or !clothesItem.faction or (clothesItem.faction and clothesItem.faction ~= playerFaction)) and (!helmetItem or !helmetItem.faction or (helmetItem.faction and helmetItem.faction ~= playerFaction)) then
+				teamColor = Color(200, 200, 200, 255);
+			end
+		elseif playerFaction == "Children of Satan" and clientFaction ~= "Children of Satan" then
+			if (!clothesItem or !clothesItem.faction or (clothesItem.faction and clothesItem.faction ~= playerFaction)) and (!helmetItem or !helmetItem.faction or (helmetItem.faction and helmetItem.faction ~= playerFaction)) then
+				local kinisgerOverride = player:GetNetVar("kinisgerOverride");
+				
+				if kinisgerOverride then
+					local classTable = Clockwork.class:GetStored()[kinisgerOverride];
+					
+					if classTable then
+						teamColor = _team.GetColor(classTable.index) or Color(200, 200, 200, 255);
+					else
+						teamColor = Color(200, 200, 200, 255);
+					end
+				else
+					teamColor = Color(200, 200, 200, 255);
+				end
+			end
+		end
+	end
+	
+	return teamColor;
+end
 
 -- Called when an entity's target ID HUD should be painted.
 function Schema:HUDPaintEntityTargetID(entity, info)
@@ -1142,6 +1235,34 @@ function Schema:ModifyStatusEffects(tab)
 	end
 end
 
+function Schema:GetAdminESPInfo(info)
+	if (Clockwork.ConVars.NPCSPAWNESP and Clockwork.ConVars.NPCSPAWNESP:GetInt() == 1) then
+		if (self.npcSpawns) then
+			if (table.IsEmpty(self.npcSpawns)) then
+				self.npcSpawns = nil;
+				
+				return;
+			end;
+			
+			for k, v in pairs (self.npcSpawns) do
+				for i, v2 in ipairs(v) do
+					if (!v2 or !isvector(v2.pos)) then
+						self.npcSpawns[k][i] = nil;
+						
+						continue;
+					end;
+
+					info[#info + 1] = {
+						position = v2.pos,
+						text = k;
+						color = Color(255, 150, 150);
+					};
+				end
+			end;
+		end;
+	end;
+end
+
 -- Called when a text entry has gotten focus.
 function Schema:OnTextEntryGetFocus(panel)
 	self.textEntryFocused = panel;
@@ -1302,7 +1423,7 @@ function Schema:Tick()
 					end;
 					
 					if ((crowPosition - position):Length() > 2000) then
-						self.crows[k]:Remove();
+						v:Remove();
 						self.crows[k] = nil;
 					end;
 				else
@@ -1343,12 +1464,10 @@ function Schema:ChatBoxAdjustInfo(info) end;
 
 -- Called when a Clockwork ConVar has changed.
 function Schema:ClockworkConVarChanged(name, previousValue, newValue)
-	if Clockwork.player:IsAdmin(Clockwork.Client) then
-		if (name == "cwWakeupSequence" and newValue) then
-			if newValue == "0" then
-				if Clockwork.Client.LoadingText then
-					self:FinishWakeupSequence();
-				end
+	if (name == "cwWakeupSequence" and newValue) then
+		if newValue == "0" then
+			if Clockwork.Client.LoadingText then
+				self:FinishWakeupSequence();
 			end
 		end
 	end
@@ -1378,6 +1497,32 @@ function Schema:CanPaintChatbox()
 		return false;
 	end;
 end;
+
+local noDisplayClasses = {
+	"dwf",
+	"dw ",
+	"dwd",
+	"dar",
+	"rav",
+	"rs ",
+	"rsc",
+	"rsf",
+	"rel",
+	"re ",
+	"adm",
+	"ad ",
+	"su ",
+	"op ",
+};
+
+function Schema:ShouldNotDisplayTyping(text)
+	local prefix = config.Get("command_prefix"):Get()
+	local stringsub = string.sub(text, 1, 4);
+	
+	if table.HasValue(noDisplayClasses, stringsub) then
+		return false;
+	end
+end
 
 -- Called to get whether the character menu should be created.
 function Schema:ShouldCharacterMenuBeCreated()
@@ -1587,6 +1732,10 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 
 				if weaponStats["defense"].parrydifficulty and weaponStats["defense"].parrydifficulty > 0.2 then
 					frame:AddText("Has Increased Parry Window", Color(110, 30, 30), nil, 0.9);
+				end
+				
+				if itemTable.unrepairable then
+					frame:AddText("Unrepairable: This weapon cannot be repaired and will always take condition damage, irrespective of beliefs.", Color(110, 30, 30), nil, 0.9);
 				end
 				
 				if itemTable.attributes then
@@ -2099,6 +2248,7 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 				
 				frame:AddText("Easily Repairable: Costs less melee repair kit condition to repair.", Color(110, 30, 30), nil, 0.9);
 				frame:AddText("Ranged Weapon: You will be disarmed upon taking damage with this weapon.", Color(110, 30, 30), nil, 0.9);
+				frame:AddText("Variable Damage: Damage will be increased or decreased depending on the distance of the target. Targets further away will receive more damage.", Color(110, 30, 30), nil, 0.9);
 				
 				if !weaponStats["defense"].candeflect then
 					frame:AddText("Cannot Deflect", Color(110, 30, 30), nil, 0.9);
@@ -2454,6 +2604,10 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 					frame:AddText("Great Shield: Reduces sprint speed by 10% when held.", Color(110, 30, 30), nil, 0.9);
 				end
 				
+				if itemTable.unrepairable then
+					frame:AddText("Unrepairable: This shield cannot be repaired and will always take condition damage, irrespective of beliefs.", Color(110, 30, 30), nil, 0.9);
+				end
+				
 				if itemTable.attributes then
 					if table.HasValue(itemTable.attributes, "conditionless") then
 						frame:AddText("Conditionless: This item will not take condition damage.", Color(110, 30, 30), nil, 0.9);
@@ -2661,6 +2815,10 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 			frame:AddText(effectiveLimbsText, Color(110, 30, 30), nil, 0.9);
 		end
 		
+		if itemTable.unrepairable then
+			frame:AddText("Unrepairable: This armor cannot be repaired and will always take condition damage, irrespective of beliefs.", Color(110, 30, 30), nil, 0.9);
+		end
+		
 		if itemTable.attributes then
 			if table.HasValue(itemTable.attributes, "conditionless") then
 				frame:AddText("Conditionless: This item will not take condition damage.", Color(110, 30, 30), nil, 0.9);
@@ -2683,7 +2841,7 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 			end
 			
 			if table.HasValue(itemTable.attributes, "increased_regeneration") then
-				frame:AddText("Increased Regeneration: Passive health regeneration is tripled.", Color(110, 30, 30), nil, 0.9);
+				frame:AddText("Increased Regeneration: Triples the health regeneration from 'Gift of the Great Tree'.", Color(110, 30, 30), nil, 0.9);
 			end
 
 			if table.HasValue(itemTable.attributes, "lifeleech") then
@@ -2728,7 +2886,7 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 			if itemTable.weightclass == "Medium" then
 				frame:AddText("Sprint Speed Reduction: 15%", Color(110, 30, 30), nil, 0.9);
 			elseif itemTable.weightclass == "Heavy" then
-				frame:AddText("Sprint Speed Reduction: 25%", Color(110, 30, 30), nil, 0.9);
+				frame:AddText("Sprint Speed Reduction: 30%", Color(110, 30, 30), nil, 0.9);
 			end
 		--end
 		
@@ -2892,11 +3050,17 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 				
 				frame:AddText("Ranged Weapon: You will be disarmed upon taking damage with this weapon.", Color(110, 30, 30), nil, 0.9);
 				
+				if itemTable.unrepairable then
+					frame:AddText("Unrepairable: This weapon cannot be repaired and will always take condition damage, irrespective of beliefs.", Color(110, 30, 30), nil, 0.9);
+				end
+				
 				if itemTable.attributes then
 					if table.HasValue(itemTable.attributes, "sundering_shot") then
 						frame:AddText("Sundering Shot: Travelling at supersonic speeds, Old World Longshot ignores armor and shields entirely.", Color(110, 30, 30), nil, 0.9);
 					elseif table.HasValue(itemTable.attributes, "sundering_shot_grapeshot") then
 						frame:AddText("Sundering Shot: Travelling at supersonic speeds, Old World Grapeshot ignores armor and shields entirely.", Color(110, 30, 30), nil, 0.9);
+					elseif table.HasValue(itemTable.attributes, "variable_damage") then
+						frame:AddText("Variable Damage: Damage will be increased or decreased depending on the distance of the target. Targets further away will receive more damage.", Color(110, 30, 30), nil, 0.9);
 					end
 				end
 
@@ -3347,6 +3511,14 @@ netstream.Hook("GoreWarhorn", function(data)
 	Clockwork.Client:EmitSound("warhorns/warhorn_gore.mp3", 60, 100);
 	
 	util.ScreenShake(Clockwork.Client:GetPos(), 2, 5, 15, 1024);
+end);
+
+netstream.Hook("NPCSpawnESPInfo", function(data)
+	if data then
+		if data[1] then
+			Schema.npcSpawns = data[1];
+		end
+	end
 end);
 
 -- Save data icon in top right.

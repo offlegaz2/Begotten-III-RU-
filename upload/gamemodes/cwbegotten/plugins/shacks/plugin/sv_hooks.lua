@@ -53,7 +53,7 @@ function cwShacks:ShackPurchased(player, shack)
 					Clockwork.player:GiveDoor(player, v.doorEnt);
 					Schema:ModifyTowerTreasury(price);
 					
-					player:SetSharedVar("shack", shack);
+					player:SetNetVar("shack", shack);
 					Clockwork.player:GiveSpawnWeapon(player, "cw_keys");
 					
 					self:NetworkShackData(_player.GetAll());
@@ -146,7 +146,7 @@ function cwShacks:ShackSold(player, shack)
 					Clockwork.player:GiveCash(player, price, "Sold Property");
 					Schema:ModifyTowerTreasury(-price);
 					
-					player:SetSharedVar("shack", nil);
+					player:SetNetVar("shack", nil);
 					
 					if player:GetFaction() ~= "Holy Hierarchy" then
 						Clockwork.player:TakeSpawnWeapon(player, "cw_keys");
@@ -189,7 +189,7 @@ function cwShacks:ShackForeclosed(player, shack)
 			v.stashCash = nil;
 			
 			if IsValid(player) then
-				player:SetSharedVar("shack", nil);
+				player:SetNetVar("shack", nil);
 				
 				if player:GetFaction() ~= "Holy Hierarchy" then
 					Clockwork.player:TakeSpawnWeapon(player, "cw_keys");
@@ -238,7 +238,7 @@ function cwShacks:ShackStashOpen(player)
 	for k, v in pairs(self.shacks) do
 		if playerPos:WithinAABox(v.pos1, v.pos2) then
 			if v.owner then
-				if k == player:GetSharedVar("shack") or player:IsAdmin() or v.coowners[characterKey] then
+				if k == player:GetNetVar("shack") or player:IsAdmin() or v.coowners[characterKey] then
 					--[[if IsValid(v.stashEnt) then
 						v.stashEnt:Remove();
 					end]]--
@@ -358,10 +358,12 @@ function cwShacks:GetPropertyInfo(player, shack)
 									
 									local coowners = {};
 									
-									for k, v in pairs(shack.coowners) do
-										table.insert(coowners, v);
+									if shack.coowners then
+										for k, v in pairs(shack.coowners) do
+											table.insert(coowners, v);
+										end
 									end
-									
+										
 									local timeLastPlayed = tostring(os.time() - tonumber(v._LastPlayed));
 									
 									if player:IsAdmin() then
@@ -412,7 +414,7 @@ function cwShacks:PlayerInsideShack(player, shack)
 end
 
 function cwShacks:PlayerCanOpenContainer(player, container)
-	if container.shack and container.shack ~= player:GetSharedVar("shack") and !player:IsAdmin() then
+	if container.shack and container.shack ~= player:GetNetVar("shack") and !player:IsAdmin() then
 		return false;
 	end
 end
@@ -422,7 +424,7 @@ function playerMeta:InsideShack(shack)
 end
 
 function playerMeta:InsideOwnedShack()
-	local ownedShack = self:GetSharedVar("shack");
+	local ownedShack = self:GetNetVar("shack");
 	
 	if ownedShack then
 		return cwShacks:PlayerInsideShack(self, ownedShack);
@@ -472,7 +474,7 @@ function cwShacks:NetworkShackData(player)
 		shackInfo[k].coowners = v.coowners;
 	end
 
-	Clockwork.datastream:Start(player, "ShackInfo", shackInfo);
+	netstream.Start(player, "ShackInfo", shackInfo);
 end
 
 -- A function to load the shack owners.
@@ -685,7 +687,7 @@ function cwShacks:PlayerLoadout(player)
 			if characterKey == v.owner then
 				Clockwork.player:GiveDoor(player, v.doorEnt);
 				
-				player:SetSharedVar("shack", k);
+				player:SetNetVar("shack", k);
 				
 				Clockwork.player:GiveSpawnWeapon(player, "cw_keys");
 				
@@ -703,8 +705,8 @@ function cwShacks:PlayerLoadout(player)
 	end
 
 	if !ownedShackFound then
-		if player:GetSharedVar("shack") then
-			player:SetSharedVar("shack", nil);
+		if player:GetNetVar("shack") then
+			player:SetNetVar("shack", nil);
 		end
 		
 		if faction ~= "Holy Hierarchy" then

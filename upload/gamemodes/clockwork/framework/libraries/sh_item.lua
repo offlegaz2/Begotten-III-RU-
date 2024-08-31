@@ -232,6 +232,15 @@ end;
 
 -- A function to get data from the item.
 function CLASS_TABLE:GetData(dataName)
+	-- Ghetto code to fix copies of itemTables having desynced item data with the actual instance.
+	if self:IsInstance() then
+		local instance = item.FindInstance(self.itemID);
+		
+		if instance then
+			return instance.data[dataName];
+		end
+	end
+	
 	return self.data[dataName];
 end;
 
@@ -386,18 +395,18 @@ function CLASS_TABLE:OnHandleUnequip(Callback)
 					
 					unequipMenu = menu:AddSubMenu("Unequip", function()
 						if offhandSlot then
-							Clockwork.datastream:Start("UnequipItem", {offhandSlot("uniqueID"), offhandSlot("itemID")});
+							netstream.Start("UnequipItem", {offhandSlot("uniqueID"), offhandSlot("itemID")});
 						end
 					
 						if mainSlot then
-							Clockwork.datastream:Start("UnequipItem", {mainSlot("uniqueID"), mainSlot("itemID")});
+							netstream.Start("UnequipItem", {mainSlot("uniqueID"), mainSlot("itemID")});
 						end
 					end)
 					
 					--[[if mainSlot then
 						unequipMenu:AddOption(mainSlot.name, function()
 							if mainSlot then
-								Clockwork.datastream:Start("UnequipItem", {mainSlot("uniqueID"), mainSlot("itemID")});
+								netstream.Start("UnequipItem", {mainSlot("uniqueID"), mainSlot("itemID")});
 							end
 						end)
 					end]]--
@@ -405,7 +414,7 @@ function CLASS_TABLE:OnHandleUnequip(Callback)
 					if offhandSlot then
 						unequipMenu:AddOption(offhandSlot.name.." (Offhand)", function()
 							if offhandSlot then
-								Clockwork.datastream:Start("UnequipItem", {offhandSlot("uniqueID"), offhandSlot("itemID")});
+								netstream.Start("UnequipItem", {offhandSlot("uniqueID"), offhandSlot("itemID")});
 							end
 						end)
 					end
@@ -740,12 +749,27 @@ end;
 
 if (SERVER) then
 	function CLASS_TABLE:SetData(dataName, value)
-		if (self:IsInstance() and self.data[dataName] != nil and (self.data[dataName] != value or istable(self.data[dataName]) or dataName == "Ammo")) then
-			self.data[dataName] = value;
+		local itemTable = self;
+	
+		-- Ghetto code to fix copies of itemTables having desynced item data with the actual instance.
+		if self:IsInstance() then
+			local instance = item.FindInstance(self.itemID);
 			
-			if (self:IsDataNetworked(dataName)) then
-				self.networkQueue[dataName] = value;
-				self:NetworkData();
+			if instance then
+				itemTable = instance;
+			end
+		end
+		
+		if (itemTable:IsInstance() and itemTable.data[dataName] != nil and (itemTable.data[dataName] != value or istable(itemTable.data[dataName]) or dataName == "Ammo")) then
+			itemTable.data[dataName] = value;
+			
+			if itemTable ~= self then
+				self.data[dataName] = value;
+			end
+			
+			if (itemTable:IsDataNetworked(dataName)) then
+				itemTable.networkQueue[dataName] = value;
+				itemTable:NetworkData();
 			end;
 		end;
 	end;
@@ -872,18 +896,44 @@ function item.GetByWeapon(weapon)
 		if (itemID and itemID != 0) then
 			local itemInstance = item.FindInstance(itemID);
 			
-			if !itemInstance then
-				local cwItemTable = weapon.cwItemTable;
-				
-				if cwItemTable then
-					itemInstance = item.CreateInstance(cwItemTable.uniqueID, cwItemTable.itemID, cwItemTable.data);
-				end
+			if itemInstance then
+				return itemInstance;
 			end
 			
-			return itemInstance;
+			local cwItemTable = weapon.cwItemTable;
+			
+			if cwItemTable then
+				return item.CreateInstance(cwItemTable.uniqueID, cwItemTable.itemID, cwItemTable.data);
+			end
 		end;
+		
+		local owner = weapon.Owner;
+		
+		if IsValid(owner) and owner:IsPlayer() and owner.equipmentSlots then
+			for i, v in ipairs(weapon.Owner:GetWeaponsEquipped()) do
+				local weaponClass = weapon:GetClass();
+				
+				if v.weaponClass == weaponClass or v.uniqueID == weaponClass then
+					return item.CreateInstance(v.uniqueID, v.itemID, v.data);
+				end
+			end
+		end
 	end;
 end;
+
+local function ItemDataMerge(oldData, newData)
+	for k, v in pairs(newData) do
+		if (istable(v) and istable(oldData[k])) then
+			if table.IsEmpty(v) then
+				oldData[k] = {};
+			else
+				ItemDataMerge(oldData[k], v)
+			end
+		else
+			oldData[k] = v
+		end
+	end
+end
 
 -- A function to create an instance of an item.
 function item.CreateInstance(uniqueID, itemID, data, bNoGenerate)
@@ -905,14 +955,18 @@ function item.CreateInstance(uniqueID, itemID, data, bNoGenerate)
 		
 		--print("Item ID: "..itemID);
 		
-		if (!item.instances[itemID]) then
+		--[[if (!item.instances[itemID]) then
 			item.instances[itemID] = table.Copy(itemTable);
 				item.instances[itemID].itemID = itemID;
 			setmetatable(item.instances[itemID], CLASS_TABLE);
-		end;
+		end;]]--
+	
+		item.instances[itemID] = table.Copy(itemTable);
+			item.instances[itemID].itemID = itemID;
+		setmetatable(item.instances[itemID], CLASS_TABLE);
 		
 		if (data) then
-			table.Merge(item.instances[itemID].data, data);
+			ItemDataMerge(item.instances[itemID].data, data);
 		end;
 		
 		if generated then
@@ -972,6 +1026,12 @@ function item.RemoveInstance(itemID, bInstant)
 	if istable(itemID) then
 		itemID = itemID.itemID;
 	end
+	
+	--[[if CLIENT then
+		print("[CLIENT] Removing item instance: "..tostring(item.instances[itemID] or "NIL"));
+	else
+		print("[SERVER] Removing item instance: "..tostring(item.instances[itemID] or "NIL"));
+	end]]--
 	
 	if itemID then
 		if bInstant then

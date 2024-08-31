@@ -141,24 +141,27 @@ function cwMedicalSystem:HUDPaintForeground()
 end;
 
 -- Called when the post progress bar info is needed.
-function cwMedicalSystem:GetPostProgressBarInfo()
-	if (Clockwork.Client:Alive()) then
-		local action, percentage = Clockwork.player:GetAction(Clockwork.Client, true);
-		
-		if (action == "heal") then
-			return {text = "You are healing yourself. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "healing") then
-			return {text = "You are healing somebody. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "performing_surgery") then
-			return {text = "You are performing an operation on somebody. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "chloroform") then
-			return {text = "You are using chloroform on somebody. Click to cancel.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "die") then
-			return {text = "You are slowly dying.", percentage = percentage, flash = percentage > 75};
-		elseif (action == "die_bleedout") then
-			return {text = "You are slowly bleeding out.", percentage = percentage, flash = percentage > 75};
-		end;
+function cwMedicalSystem:GetProgressBarInfoAction(action, percentage)
+	if (action == "heal") then
+		return {text = "You are healing yourself. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "healing") then
+		return {text = "You are healing somebody. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "performing_surgery") then
+		return {text = "You are performing an operation on somebody. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "chloroform") then
+		return {text = "You are using chloroform on somebody. Click to cancel.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "die") then
+		return {text = "You are slowly dying.", percentage = percentage, flash = percentage > 75};
+	elseif (action == "die_bleedout") then
+		return {text = "You are slowly bleeding out.", percentage = percentage, flash = percentage > 75};
 	end;
+end;
+
+-- Called when the local player attempts to get up.
+function cwMedicalSystem:PlayerCanGetUp(action)
+	if action == "die" or action == "die_bleedout" then
+		return false;
+	end
 end;
 
 -- Called when the screenspace effects are rendered.
@@ -250,7 +253,7 @@ function cwMedicalSystem:RenderScreenspaceEffects()
 					Clockwork.chatBox:Add(nil, nil, Color(255, 255, 150, 255), "*** "..strings[math.random(1, #strings)]);
 					Clockwork.Client:EmitSound("begotten/ui/sanity_damage.mp3");
 					
-					Clockwork.datastream:Start("TakeSanity", 5);
+					netstream.Start("TakeSanity", 5);
 				end
 			end
 			

@@ -107,13 +107,13 @@ function PANEL:HandleUnequip(itemTable)
 		itemTable:OnHandleUnequip(
 		function(arguments)
 			if (arguments) then
-				Clockwork.datastream:Start("UnequipItem", {itemTable("uniqueID"), itemTable("itemID"), arguments});
+				netstream.Start("UnequipItem", {itemTable("uniqueID"), itemTable("itemID"), arguments});
 			else
-				Clockwork.datastream:Start("UnequipItem", {itemTable("uniqueID"), itemTable("itemID")});
+				netstream.Start("UnequipItem", {itemTable("uniqueID"), itemTable("itemID")});
 			end;
 		end);
 	else
-		Clockwork.datastream:Start("UnequipItem", {itemTable("uniqueID"), itemTable("itemID")});
+		netstream.Start("UnequipItem", {itemTable("uniqueID"), itemTable("itemID")});
 	end;
 end;
 
@@ -198,7 +198,7 @@ function PANEL:Rebuild()
 
 				if parent and parent.itemData and parent.itemTable then
 					--PANEL:HandleUnequip(parent.itemTable);
-					Clockwork.datastream:Start("UnequipItem", {parent.itemTable("uniqueID"), parent.itemTable("itemID")});
+					netstream.Start("UnequipItem", {parent.itemTable("uniqueID"), parent.itemTable("itemID")});
 				end
 			end
 		end
@@ -333,7 +333,9 @@ function PANEL:Rebuild()
 					end
 				end
 				
-				if v2.category == "Throwables" or v2.category == "Weapons" or v2.category == "Melee" or v2.category == "Shields" or v2.category == "Firearms" or v2.category == "Crossbows" or v2.category == "Throwables" or v2.category == "Lights" then
+				local baseItem = v2.baseItem;
+				
+				if baseItem == "weapon_base" or baseItem == "shield_base" or baseItem == "firearm_base" then
 					for i, slot in ipairs(slots) do
 						local slottedItem = Clockwork.Client.equipmentSlots[slot];
 						local offhandItem = Clockwork.Client.equipmentSlots[slot.."Offhand"];
@@ -358,7 +360,7 @@ function PANEL:Rebuild()
 							end
 						end
 					end
-				elseif v2.category == "Charms" then	
+				elseif baseItem == "enchanted_base" then	
 					if v2:HasPlayerEquipped(Clockwork.Client) then
 						for i = 1, #charm_slots do
 							local slot = charm_slots[i];
@@ -433,9 +435,9 @@ function PANEL:Rebuild()
 									if occupierParent and occupierParent.itemData and occupierParent.itemTable then
 										local itemTable = occupierParent.itemTable;
 										
-										if (itemTable.category == "Firearms" or itemTable.category == "Crossbows") and itemTable.ammoTypes then
+										if (itemTable.baseItem == "firearm_base") and itemTable.ammoTypes then
 											if table.HasValue(itemTable.ammoTypes, parent.itemTable.ammoType) then
-												Clockwork.datastream:Start("UseAmmo", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+												netstream.Start("UseAmmo", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 											end
 										end
 									end
@@ -499,7 +501,7 @@ function PANEL:Rebuild()
 														local itemTable = occupierParent.itemTable;
 														
 														if itemTable.uniqueID == parent.itemTable.uniqueID then
-															Clockwork.datastream:Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														end
 													end
 												end
@@ -533,7 +535,7 @@ function PANEL:Rebuild()
 														local itemTable = occupierParent.itemTable;
 														
 														if itemTable.uniqueID == parent.itemTable.uniqueID then
-															Clockwork.datastream:Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														end
 													end
 												end
@@ -544,10 +546,12 @@ function PANEL:Rebuild()
 							end
 						end
 						
-						if v2.category == "Melee" or v2.category == "Shields" or v2.category == "Weapons" or v2.category == "Firearms" or v2.category == "Crossbows" or v2.category == "Throwables" or v2.category == "Lights" then
+						local baseItem = v2.baseItem;
+						
+						if baseItem == "weapon_base" or baseItem == "shield_base" or baseItem == "firearm_base" then
 							inventoryIcon.spawnIcon:Droppable("weaponSlot");
 							
-							if v2.category == "Firearms" or v2.category == "Crossbows" then
+							if baseItem == "firearm_base" then
 								inventoryIcon.spawnIcon:Receiver("ammunition", function(self, panels, dropped, menuIndex, x, y)
 									if (dropped) then
 										local panel = panels[1];
@@ -562,9 +566,9 @@ function PANEL:Rebuild()
 													if occupierParent and occupierParent.itemData and occupierParent.itemTable then
 														local itemTable = occupierParent.itemTable;
 														
-														if (itemTable.category == "Firearms" or itemTable.category == "Crossbows") and itemTable.ammoTypes then
+														if (itemTable.baseItem == "firearm_base") and itemTable.ammoTypes then
 															if table.HasValue(itemTable.ammoTypes, parent.itemTable.ammoType) then
-																Clockwork.datastream:Start("UseAmmo", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+																netstream.Start("UseAmmo", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 															end
 														end
 													end
@@ -574,8 +578,6 @@ function PANEL:Rebuild()
 									end
 								end);
 							end
-						elseif v2.category == "Helms" or v2.category == "Armor" or v2.category == "Charms" or v2.category == "Backpacks" then
-							inventoryIcon.spawnIcon:Droppable(v2.category);
 						elseif v2.category == "Containers" or v2.category == "Dissolvables" then
 							inventoryIcon.spawnIcon:Droppable("containers");
 							
@@ -595,9 +597,9 @@ function PANEL:Rebuild()
 														local itemTable = occupierParent.itemTable;
 														
 														if itemTable.category == "Containers" then
-															Clockwork.datastream:Start("MergeAlchemyContainers", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("MergeAlchemyContainers", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														elseif itemTable.category == "Dissolvables" then
-															Clockwork.datastream:Start("DissolveObject", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("DissolveObject", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														end
 													end
 												end
@@ -606,7 +608,7 @@ function PANEL:Rebuild()
 									end
 								end);
 							end
-						elseif v2.category == "Shot" then
+						elseif baseItem == "shot_base" then
 							inventoryIcon.spawnIcon:Droppable("ammunition");
 							
 							if v2.ammoMagazineSize then
@@ -626,7 +628,7 @@ function PANEL:Rebuild()
 														
 														if itemTable.category == "Shot" then
 															if parent.itemTable.UseOnMagazine and parent.itemTable:UseOnMagazine(Clockwork.Client, itemTable) then
-																Clockwork.datastream:Start("MergeAmmoMagazine", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+																netstream.Start("MergeAmmoMagazine", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 															end
 														end
 													end
@@ -638,6 +640,8 @@ function PANEL:Rebuild()
 							else
 								inventoryIcon.spawnIcon:Droppable("ammunitionMagazine");
 							end
+						else
+							inventoryIcon.spawnIcon:Droppable(v2.category);
 						end
 						
 						inventoryIcon.spawnIcon:Droppable("dropper");
@@ -678,7 +682,7 @@ function PANEL:Rebuild()
 													local itemTable = occupierParent.itemTable;
 													
 													if itemTable.uniqueID == parent.itemTable.uniqueID then
-														Clockwork.datastream:Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+														netstream.Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 													end
 												end
 											end
@@ -712,7 +716,7 @@ function PANEL:Rebuild()
 													local itemTable = occupierParent.itemTable;
 													
 													if itemTable.uniqueID == parent.itemTable.uniqueID then
-														Clockwork.datastream:Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+														netstream.Start("MergeRepair", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 													end
 												end
 											end
@@ -723,10 +727,12 @@ function PANEL:Rebuild()
 						end
 					end
 					
-					if v2.category == "Melee" or v2.category == "Shields" or v2.category == "Weapons" or v2.category == "Firearms" or v2.category == "Crossbows"  or v2.category == "Throwables" then
+					local baseItem = v2.baseItem;
+				
+					if baseItem == "weapon_base" or baseItem == "shield_base" or baseItem == "firearm_base" then
 						inventoryIcon.spawnIcon:Droppable("weaponSlot");
 						
-						if v2.category == "Firearms" or v2.category == "Crossbows" then
+						if baseItem == "firearm_base" then
 							inventoryIcon.spawnIcon:Receiver("ammunition", function(self, panels, dropped, menuIndex, x, y)
 								if (dropped) then
 									local panel = panels[1];
@@ -741,9 +747,9 @@ function PANEL:Rebuild()
 												if occupierParent and occupierParent.itemData and occupierParent.itemTable then
 													local itemTable = occupierParent.itemTable;
 													
-													if (itemTable.category == "Firearms" or itemTable.category == "Crossbows") and itemTable.ammoTypes then
+													if (itemTable.baseItem == "firearm_base") and itemTable.ammoTypes then
 														if table.HasValue(itemTable.ammoTypes, parent.itemTable.ammoType) then
-															Clockwork.datastream:Start("UseAmmo", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("UseAmmo", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														end
 													end
 												end
@@ -753,8 +759,6 @@ function PANEL:Rebuild()
 								end
 							end);
 						end
-					elseif v2.category == "Helms" or v2.category == "Armor" or v2.category == "Charms" or v2.category == "Backpacks" then
-						inventoryIcon.spawnIcon:Droppable(v2.category);
 					elseif v2.category == "Containers" or v2.category == "Dissolvables" then
 						inventoryIcon.spawnIcon:Droppable("containers");
 						
@@ -777,9 +781,9 @@ function PANEL:Rebuild()
 														local itemTable = occupierParent.itemTable;
 														
 														if itemTable.category == "Containers" then
-															Clockwork.datastream:Start("MergeAlchemyContainers", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("MergeAlchemyContainers", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														elseif itemTable.category == "Dissolvables" then
-															Clockwork.datastream:Start("DissolveObject", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+															netstream.Start("DissolveObject", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 														end
 													end
 												end
@@ -789,7 +793,7 @@ function PANEL:Rebuild()
 								end
 							end);
 						end
-					elseif v2.category == "Shot" then
+					elseif baseItem == "shot_base" then
 						inventoryIcon.spawnIcon:Droppable("ammunition");
 						
 						if v2.ammoMagazineSize then
@@ -808,7 +812,7 @@ function PANEL:Rebuild()
 													local itemTable = occupierParent.itemTable;
 													
 													if parent.itemTable.UseOnMagazine and parent.itemTable:UseOnMagazine(Clockwork.Client, itemTable) then
-														Clockwork.datastream:Start("MergeAmmoMagazine", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
+														netstream.Start("MergeAmmoMagazine", {parent.itemTable("uniqueID"), parent.itemTable("itemID"), itemTable("uniqueID"), itemTable("itemID")});
 													end
 												end
 											end
@@ -819,6 +823,8 @@ function PANEL:Rebuild()
 						else
 							inventoryIcon.spawnIcon:Droppable("ammunitionMagazine");
 						end
+					else
+						inventoryIcon.spawnIcon:Droppable(v2.category);
 					end
 					
 					inventoryIcon.spawnIcon:Droppable("dropper");

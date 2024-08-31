@@ -41,6 +41,7 @@ ENT.ClimbUpAnimation = "run_all_grenade"--ACT_ZOMBIE_CLIMB_UP --pull_grenade
 ENT.ClimbOffset = Vector(-14, 0, 0)
 ENT.ArmorPiercing = 90;
 ENT.Damage = 60;
+ENT.MaxMultiHit = 3;
 -- Detection --
 ENT.EyeBone = "ValveBiped.Bip01_Spine4"
 ENT.EyeOffset = Vector(7.5, 0, 5)
@@ -59,10 +60,25 @@ ENT.PossessionViews = {
 	}
 }
 ENT.PossessionBinds = {
+	[IN_JUMP] = {{
+		coroutine = true,
+		onkeydown = function(self)
+			if(!self:IsOnGround()) then return; end
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,700) + self:GetForward() * 100);
+
+			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	}},
+
 	[IN_ATTACK] = {{
 		coroutine = true,
 		onkeydown = function(self)
-			self:EmitSound("begotten/npc/suitor/attack_launch0"..math.random(1, 2)..".mp3", 100, self.pitch)
+			if(self.nextMeleeAttack and self.nextMeleeAttack > CurTime()) then return; end
+						self:EmitSound("begotten/npc/suitor/attack_launch0"..math.random(1, 2)..".mp3", 100, self.pitch)
 			self:PlaySequenceAndMove("fastattack", 1, self.PossessionFaceForward)
 			--self:PlayActivityAndMove(ACT_MELEE_ATTACK1, 1, self.PossessionFaceForward)
 		end
@@ -96,6 +112,21 @@ if SERVER then
 	end
 	function ENT:OnParried()
 		self.nextMeleeAttack = CurTime() + 2;
+		self:ResetSequence(ACT_IDLE);
+
+		local rand = math.random(1,3);
+		local direction = (rand == 1 and self:GetRight() or rand == 2 and (self:GetRight() * -1) or (self:GetForward() * -1));
+		local distance = math.random(200,250);
+
+		timer.Simple(0.1, function()
+			self:ResetSequence(ACT_WALK);
+			self:Jump(40);
+			self:SetVelocity(self:GetVelocity() + direction * distance);
+			self:EmitSound(self.OnDamageSounds[math.random(#self.OnDamageSounds)], 100, self.pitch + math.random(5,15));
+			self:EmitSound("Zombie.AttackMiss");
+
+		end);
+
 	end
 	-- Init/Think --
 	function ENT:CustomInitialize()
@@ -149,8 +180,20 @@ if SERVER then
 					ragdoll:Fire("fadeandremove", 1);
 					ragdoll:EmitSound("begotten/npc/burn.wav");
 					
-					if cwRituals and cwItemSpawner then
-						local randomItem = cwItemSpawner:SelectItem("rituals");
+					if cwRituals and cwItemSpawner and !hook.Run("GetShouldntThrallDropCatalyst", ragdoll) then
+						local randomItem;
+						local spawnable = cwItemSpawner:GetSpawnableItems(true);
+						local lootPool = {};
+						
+						for _, itemTable in ipairs(spawnable) do
+							if itemTable.category == "Catalysts" then
+								if itemTable.itemSpawnerInfo and !itemTable.itemSpawnerInfo.supercrateOnly then
+									table.insert(lootPool, itemTable);
+								end
+							end
+						end
+						
+						randomItem = lootPool[math.random(1, #lootPool)];
 						
 						if randomItem then
 							local itemInstance = item.CreateInstance(randomItem.uniqueID);
@@ -237,6 +280,27 @@ if SERVER then
 	
 	function ENT:OnChaseEnemy()
 		local curTime = CurTime();
+
+		if(!self.nextGateCheck or self.nextGateCheck < curTime) then
+			self.nextGateCheck = curTime + 5;
+
+			local data = {}
+			data.start = self:GetPos() + Vector(0,0,45);
+			data.endpos = data.start + self:GetForward() * 50;
+			data.filter = self;
+
+			local facing = util.TraceLine(data).Entity;
+			
+			if(IsValid(facing) and facing.GetName and facing:GetName() == "gate_door") then
+				self:MoveBackward(150);
+				self:EmitSound(self.PainSounds[math.random(#self.PainSounds)], 100, self.pitch);
+				self:EmitSound("Zombie.AttackMiss");
+				self:Jump(400, function() self:SetVelocity(self:GetVelocity() + self:GetForward() * 50); end);
+
+			end
+
+		end
+
 		if (!self.nextId or self.nextId < curTime) then
 			self.nextId = curTime + math.random(7, 15)
 			self:EmitSound("begotten/npc/suitor/amb_hunt0"..math.random(1,3)..".mp3", 100, self.pitch)
@@ -248,7 +312,6 @@ if SERVER then
 	end;
 	
 	function ENT:OnAnimEvent()
-		local sha = false
 		if self:IsAttacking() and self:GetCycle() > 0.3 then
 			self:Attack({
 				damage = self.Damage,

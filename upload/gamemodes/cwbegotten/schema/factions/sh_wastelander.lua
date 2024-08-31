@@ -55,13 +55,23 @@ local FACTION = Clockwork.faction:New("Gatekeeper");
 	FACTION.alliedfactions = {"Holy Hierarchy"};
 	FACTION.singleGender = GENDER_MALE;
 	FACTION.characterLimit = 1; -- # of characters of this faction a player can have.
-	FACTION.ratio = 0.4; -- 0.4 slots per player (12 at 30 players).
+	FACTION.ratio = 0.3; -- 0.3 slots per player (9 at 30 players).
 	--FACTION.imposters = true; -- Kinisgers should get enlisted through /enlist on Wanderer disguises.
 	FACTION.names = "glazic";
 	FACTION.subfactions = {
 		{name = "Legionary", subtitle = "Legionaries - Soldiers of the Church", description = "The Holy Order of the Gatekeepers has defended the Holy Hierarchy from unholy threats since time immemorial. They have seen many changes over the years and vary considerably in strength, equipment, and number from county district to county district, but nonetheless share a singular goal: to protect the Holy Hierarchy at all costs. Legionaries represent the rank and file of this Holy Order and know only the Glaze. These men are a mix of professional soldiers, conscripted wasteland filth, and religious zealots. They serve as frontline troops and guardsmen in service of the Holy Hierarchy, often taking considerable risks to advance their ministers' goals or to defend them.", attributes = {{Color(0, 225, 0), "(+) Constant Drilling: Starts with +15 maximum stamina"}, {Color(0, 225, 0), "(+) Nourishing Rations: Starts with +25 maximum health"}, {Color(0, 225, 0), "(+) Starts at Sacrament Level 6"}, {Color(0, 225, 0), "(+) Strength in Numbers: +100% faith gain from dealing damage"}, {Color(225, 0, 0), "(-) The 'Voltism' subfaith is locked"}}},
 		{name = "Auxiliary", subtitle = "Auxilium - Smiths and Medici", description = "The backbone of the Holy Order and the purveyors of its superior ingenuity, auxiliaries uphold supply, maintain the troops, and act as reservists in combat. As Smiths they arm the ranks with superior weaponry, man the cannons and fortify defensive locations. As Medici they prevent outbreaks in the ranks and mend injuries taken from battle. They are still expected to fight if need be, though are not as often put into harm's way as their legionary kin.", attributes = {{Color(0, 225, 0), "(+) Men of Knowledge: +25% increased faith gain"}, {Color(0, 225, 0), "(+) Starts at Sacrament Level 12"}, {Color(225, 0, 0), "(-) Tier III and IV of the Prowess belief tree are locked"}, {Color(225, 0, 0), "(-) The 'Voltism' subfaith is locked"}}},
-		{name = "Praeventor", startingRank = 12, whitelist = true, subtitle = "Praeventores - Scouts and Assassins", description = "Taking the name of a similar unit from ancient Roman times, the Praeventores serve as a small but elite cadre of scouts, hunters, and assassins for the Holy Order. Recruited from the most loyal and skilled followers of Hard-Glaze, the Praeventores lack any standardized gear to help them blend in whilst performing their duties in the wastes. These duties include: reporting on enemy movements, scavenging valuable artifacts or needed supplies, assassinating enemies of the Holy Hierarchy or sniping targets at long range, bringing in or dispatching the targets of bounties, and gathering information.", attributes = {{Color(0, 225, 0), "(+) Excursionists: -25% stamina drain and +5% sprint speed"}, {Color(0, 225, 0), "(+) Starts at Sacrament Level 8"}, {Color(225, 0, 0), "(-) The 'Sol Orthodoxy' and 'Voltism' subfaiths are locked"}}},
+		{name = "Praeventor", startingRank = 12, whitelist = true, subtitle = "Praeventores - Scouts and Assassins", description = "Taking the name of a similar unit from ancient Roman times, the Praeventores serve as a small but elite cadre of scouts, hunters, and assassins for the Holy Order. Recruited from the most loyal and skilled followers of Hard-Glaze, the Praeventores lack any standardized gear to help them blend in whilst performing their duties in the wastes. These duties include: reporting on enemy movements, scavenging valuable artifacts or needed supplies, assassinating enemies of the Holy Hierarchy or sniping targets at long range, bringing in or dispatching the targets of bounties, and gathering information.", attributes = {{Color(0, 225, 0), "(+) Excursionists: -25% stamina drain and +5% sprint speed"}, {Color(0, 225, 0), "(+) Masters of Disguise: Recognising does not reveal your rank"}, {Color(0, 225, 0), "(+) Starts at Sacrament Level 8"}, {Color(225, 0, 0), "(-) The 'Sol Orthodoxy' and 'Voltism' subfaiths are locked"}}},
+	};
+	FACTION.residualXPZones = { -- Zones that boost residual XP gain for this faction.
+		["rp_begotten3"] = {
+			{pos1 = Vector(1390, 10153, -938), pos2 = Vector(-2370, 11254, -1690), modifier = 2, nightModifier = 4}, -- Gate
+			{pos1 = Vector(9422, 11862, -1210), pos2 = Vector(10055, 10389, -770), modifier = 3, nightModifier = 5}, -- Gorewatch
+			{pos1 = Vector(3458, 12655 -814), pos2 = Vector(3335, 12769, -685), modifier = 2, nightModifier = 4}, -- Watchtower
+			{pos1 = Vector(2742, 10244, -1194), pos2 = Vector(2913, 10071, -1074), modifier = 2, nightModifier = 4}, -- Watchtower
+			{pos1 = Vector(-1963, 10678, -1055), pos2 = Vector(-2144, 10886, -1194), modifier = 2, nightModifier = 4}, -- Watchtower
+			{pos1 = Vector(-3468, 12985, -375), pos2 = Vector(-3591, 13103, -241), modifier = 2, nightModifier = 4}, -- Watchtower
+		},
 	};
 	
 	-- Called when a player is transferred to the faction.
@@ -88,6 +98,10 @@ local FACTION = Clockwork.faction:New("Gatekeeper");
 	
 	if !Schema.RankTiers then
 		Schema.RankTiers = {};
+	end
+	
+	if !Schema.RanksRestrictedWages then
+		Schema.RanksRestrictedWages = {};
 	end
 	
 	if !Schema.RanksToSubfaction then
@@ -122,6 +136,9 @@ local FACTION = Clockwork.faction:New("Gatekeeper");
 		[4] = {"High Gatekeeper"},
 		[5] = {"Master-At-Arms"},
 	};
+	
+	-- Do not grant wages to these ranks if they are inside the safezone.
+	Schema.RanksRestrictedWages["Gatekeeper"] = {1, 2, 12, 13, 14};
 	
 	Schema.RanksToSubfaction["Gatekeeper"] = {
 		["Scout"] = "Praeventor",
@@ -178,7 +195,7 @@ local FACTION = Clockwork.faction:New("Holy Hierarchy");
 	FACTION.description = "The Holy Hierarchy upholds the ancient superiority of the enlightened few. \nAmongst the dark sea of bastard blood and uncivilized rabble, they are the adjudicators and administrators to enforce Holy Light. \nStill, many are corrupt, seeking self indulgence rather than directing rights. \nAfter all, from their high seats, there are none above them to look down in judgement."
 	FACTION.availablefaiths = {"Faith of the Light"};
 	FACTION.alliedfactions = {"Gatekeeper"};
-	FACTION.ratio = 0.1; -- 0.2 slots per player (3 at 30 players).
+	FACTION.ratio = 0.1; -- 0.1 slots per player (3 at 30 players).
 	--FACTION.imposters = true;
 	FACTION.names = "glazic";
 	FACTION.subfactions = {
@@ -214,7 +231,7 @@ local FACTION = Clockwork.faction:New("Goreic Warrior");
 	FACTION.availablefaiths = {"Faith of the Family"};
 	FACTION.subfactionsToAvailableFaiths = {["Clan Reaver"] = {"Faith of the Family", "Faith of the Dark"}};
 	FACTION.characterLimit = 1; -- # of characters of this faction a player can have.
-	FACTION.ratio = 0.3; -- 0.3 slots per player (9 at 30 players).
+	FACTION.ratio = 0.2; -- 0.2 slots per player (6 at 30 players).
 	FACTION.imposters = true;
 	FACTION.names = "goreic";
 	FACTION.subfactions = {
@@ -251,7 +268,7 @@ local FACTION = Clockwork.faction:New("Children of Satan");
 	FACTION.description = "Those selected to join the Children of Satan are exceptional individuals, be they particularly twisted and cunning, or perhaps born with the blood of ancient royalty. \nFor this reason the Children are few in number compared to the other powers, but they make up for this with their unmatched skill and grace. \nThe average Child of Satan is centuries old, obsessed with higher forbidden knowledge and glorious works of art and passion, yet they still have very much to learn. \nFearing what becomes of their corrupted souls if they are to meet an unforseen fate before reaching Demonhood, a Child of Satan will rarely risk their life for a prize not satisfactory. \nThey are the unseen puppet masters; the Glaze and the Gore must be kept in the balance, for Satan desires more subjects in his war against the Undergod, and extinction will only result in His victory.";
 	FACTION.availablefaiths = {"Faith of the Dark"};
 	FACTION.characterLimit = 1; -- # of characters of this faction a player can have.
-	FACTION.ratio = 0.3; -- 0.3 slots per player (9 at 30 players).
+	FACTION.ratio = 0.15; -- 0.15 slots per player (4 at 30 players).
 	FACTION.names = "glazic";
 	FACTION.subfactions = {
 		{name = "Varazdat", subtitle = "House Varazdat - Master Swordsmen and Drinkers of Blood", description = "The Eastern Nigerii Empire is aptly known as the Land of a Thousand Princes for its infamous lust-crazed Emperors. Several of these Emperors held tremendous orgies in their palace grounds that led to many bastard children. Due to unclear laws of succession, this led to an unending stretch of wars hosted in the Far East for a throne soaked in blood. Among the thousands of claimants to the throne was the Varazdat child, one who had very little royal blood in him, but all the ambition in the world. While the other pretenders were propped up by wealthy spice merchants and noblemen, Varazdat was a gutter rat who began his climb by pickpocketing and throat slicing. He kidnapped other claimants and prepared their bodies into fine feasts, their tender meat spiced and roasted to perfection. For each would-be Prince he killed and cannibalized, he absorbed their power and birthright. At the end of his road he was positively bloated, his belly full of royalty, and his claim to the throne backed by millions of mercenaries. The Varazdat reign did not last very long, as most go, but it opened the way for future Emperors to seek powers from the Dark. Today those who share the blood of House Varazdat are feared as particularly ruthless schemers, and child-eaters.", attributes = {{Color(0, 225, 0), "(+) Bloodlust: +10% sprint speed when above 95% health"}, {Color(0, 225, 0), "(+) Lifeleech: 50% damage dealt returned as health."}, {Color(0, 225, 0), "(+) Eastern Warriors: Starts with +25 maximum health and +15 maximum stamina"}, {Color(0, 225, 0), "(+) Starts with the 'Savage' and 'Heart Eater' beliefs unlocked"}, {Color(0, 225, 0), "(+) Starts at Sacrament Level 5"}, {Color(225, 0, 0), "(-) Can only gain sustenance from feeding on human flesh"}, {Color(225, 0, 0), "(-) Crazed Cannibals: Sanity loss is increased by 50%"}}},

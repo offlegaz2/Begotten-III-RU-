@@ -13,11 +13,11 @@ netstream.Hook("SendCountryCode", function(player, data)
 	end;
 end);
 
-netstream.Hook("GetTargetRecognises", function(player, data)
+--[[netstream.Hook("GetTargetRecognises", function(player, data)
 	if (IsValid(data) and data:IsPlayer()) then
 		player:SetNetVar("TargetKnows", Clockwork.player:DoesRecognise(data, player))
 	end
-end)
+end)]]--
 
 netstream.Hook("EntityMenuOption", function(player, data)
 	local entity = data[1]
@@ -99,7 +99,7 @@ netstream.Hook("InteractCharacter", function(player, data)
 			local fault = hook.Run("PlayerCanInteractCharacter", player, action, character)
 
 			if (fault == false or type(fault) == "string") then
-				return Clockwork.player:SetCreateFault(fault or "You cannot interact with this character!")
+				return Clockwork.player:SetCreateFault(player, fault or "You cannot interact with this character!")
 			elseif (action == "delete") then
 				local bSuccess, fault = Clockwork.player:DeleteCharacter(player, characterID)
 

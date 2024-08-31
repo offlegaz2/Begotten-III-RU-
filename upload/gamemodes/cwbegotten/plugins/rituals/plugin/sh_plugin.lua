@@ -29,7 +29,7 @@ local COMMAND = Clockwork.command:New("CharMark");
 				Schema:EasyText(player, "darkgrey", target:Name().." is already marked for death!");
 			else
 				target:SetCharacterData("markedBySatanist", true);
-				target:SetSharedVar("markedBySatanist", true);
+				target:SetNetVar("markedBySatanist", true);
 				
 				Schema:EasyText(GetAdmins(), "cornflowerblue", target:Name().." has been manually marked for death by "..player:Name());
 			end
@@ -53,7 +53,7 @@ local COMMAND = Clockwork.command:New("CharUnMark");
 		if (target) then
 			if target:GetCharacterData("markedBySatanist") == true then
 				target:SetCharacterData("markedBySatanist", false);
-				target:SetSharedVar("markedBySatanist", false);
+				target:SetNetVar("markedBySatanist", false);
 				
 				Schema:EasyText(GetAdmins(), "cornflowerblue", target:Name().." has been manually unmarked for death by "..player:Name());
 			else
@@ -67,10 +67,10 @@ COMMAND:Register();
 
 local COMMAND = Clockwork.command:New("CharMakeRitual");
 	COMMAND.tip = "Force a character to perform a ritual, useful for debugging.";
-	COMMAND.text = "<string Name> <string RitualID> [bool ignoreItems]";
+	COMMAND.text = "<string Name> <string RitualID> [bool ignoreItems] [bool ignoreBeliefs]";
 	COMMAND.access = "s";
 	COMMAND.arguments = 2;
-	COMMAND.optionalArguments = 1;
+	COMMAND.optionalArguments = 2;
 	COMMAND.alias = {"ForceRitual", "PlyForceRitual", "CharForceRitual", "MakeRitual", "PlyMakeRitual", "CharMakePerformRitual", "MakePerformRitual", "PlyMakePerformRitual"};
 
 	-- Called when the command has been run.
@@ -82,14 +82,8 @@ local COMMAND = Clockwork.command:New("CharMakeRitual");
 			local ritualTable = cwRituals.rituals.stored[ritualID];
 			
 			if ritualTable then
-				if tobool(arguments[3]) == true then
-					if !cwRituals:PerformRitual(target, ritualID, nil, true) then
-						Schema:EasyText(player, "grey", target:Name().." could not perform "..ritualTable.name.."!");
-					end
-				else
-					if !cwRituals:PerformRitual(target, ritualID, itemIDs) then
-						Schema:EasyText(player, "grey", target:Name().." could not perform "..ritualTable.name.."!");
-					end
+				if !cwRituals:PerformRitual(target, ritualID, nil, tobool(arguments[3] or false), tobool(arguments[4] or false)) then
+					Schema:EasyText(player, "grey", target:Name().." could not perform "..ritualTable.name.."!");
 				end
 			else
 				Schema:EasyText(player, "grey", ritualID.." is not a valid ritual!");
@@ -144,7 +138,14 @@ local COMMAND = Clockwork.command:New("CharTransferFactionOverride");
 				target:SetCharacterData("kinisgerOverrideSubfaction", "");
 				target:SetCharacterData("rank", nil);
 				
+				local targetAngles = target:EyeAngles();
+				local targetPos = target:GetPos();
+				
 				Clockwork.player:LoadCharacter(target, Clockwork.player:GetCharacterID(target));
+				
+				target:SetPos(targetPos);
+				target:SetEyeAngles(targetAngles);
+					
 				Clockwork.player:NotifyAll(player:Name().." has changed "..name.."'s disguise to the "..faction.." faction.");
 			else
 				Clockwork.player:Notify(player, fault or target:Name().." could not have their disguise changed to the "..faction.." faction!");
@@ -184,7 +185,14 @@ local COMMAND = Clockwork.command:New("CharTransferSubfactionOverride");
 				if istable(subfaction) then
 					target:SetCharacterData("kinisgerOverrideSubfaction", subfaction.name);
 					
+					local targetAngles = target:EyeAngles();
+					local targetPos = target:GetPos();
+					
 					Clockwork.player:LoadCharacter(target, Clockwork.player:GetCharacterID(target));
+					
+					target:SetPos(targetPos);
+					target:SetEyeAngles(targetAngles);
+					
 					Clockwork.player:NotifyAll(player:Name().." has transferred "..name.."'s disguise to the "..subfaction.name.." subfaction.");
 				else
 					Clockwork.player:Notify(player, subfaction.." is not a valid subfaction for this faction!");

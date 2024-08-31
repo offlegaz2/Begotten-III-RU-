@@ -5,6 +5,9 @@
 
 Schema:SetGlobalAlias("Begotten");
 
+game.AddParticles("particles/fire_01.pcf");
+PrecacheParticleSystem("env_fire_large");
+
 Clockwork.flag:Add("C", "Spawn Vehicles", "Access to spawn vehicles.")
 Clockwork.flag:Add("r", "Spawn Ragdolls", "Access to spawn ragdolls.")
 Clockwork.flag:Add("c", "Spawn Chairs", "Access to spawn chairs.")
@@ -24,7 +27,6 @@ Clockwork.flag:Add("L", "Listener", "Listen in to all radio frequencies, darkwhi
 Clockwork.flag:Add("I", "No Limb Damage", "Take no limb damage.")
 Clockwork.flag:Add("N", "No Character Needs", "Character needs (i.e. hunger) will not affect you.")
 Clockwork.flag:Add("M", "No Pain Sounds", "No pain or death sounds from your character.")
-Clockwork.flag:Add("U", "Clan Crast Flag", "Flag for Clan Crast merchant.")
 
 if (game.GetMap() == "rp_begotten3") then
 	Schema.MapLocations = {
@@ -245,11 +247,11 @@ local COMMAND = Clockwork.command:New("StartSound");
 		local pitch = arguments[4] or 100;
 		local dsp = arguments[5] or 0;
 
-		Clockwork.datastream:Start({player, target}, "StartCustomSound", {sound, volume, pitch});
+		netstream.Start({player, target}, "StartCustomSound", {sound, volume, pitch});
 		
 		if (tobool(arguments[6])) then
-			Clockwork.datastream:Start({player, target}, "FadeAllMusic");
-			Clockwork.datastream:Start({player, target}, "DisableDynamicMusic");
+			netstream.Start({player, target}, "FadeAllMusic");
+			netstream.Start({player, target}, "DisableDynamicMusic");
 		end;
 	end;
 COMMAND:Register();
@@ -269,10 +271,10 @@ local COMMAND = Clockwork.command:New("StartSoundGlobal");
 		local pitch = arguments[3] or 100;
 		local dsp = arguments[4] or 0;
 		
-		Clockwork.datastream:Start(nil, "StartCustomSound", {sound, volume, pitch, dsp})
+		netstream.Start(nil, "StartCustomSound", {sound, volume, pitch, dsp})
 		if (tobool(arguments[5])) then
-			Clockwork.datastream:Start(nil, "FadeAllMusic");
-			Clockwork.datastream:Start(nil, "DisableDynamicMusic");
+			netstream.Start(nil, "FadeAllMusic");
+			netstream.Start(nil, "DisableDynamicMusic");
 		end;
 	end;
 COMMAND:Register();
@@ -300,11 +302,11 @@ local COMMAND = Clockwork.command:New("StartSoundRadius");
 		local pitch = arguments[4] or 100;
 		local dsp = arguments[5] or 0;
 		for k, v in pairs (players) do
-			Clockwork.datastream:Start(v, "StartCustomSound", {sound, volume, pitch});
+			netstream.Start(v, "StartCustomSound", {sound, volume, pitch});
 			
 			if (tobool(arguments[6])) then
-				Clockwork.datastream:Start(v, "FadeAllMusic");
-				Clockwork.datastream:Start(v, "DisableDynamicMusic");
+				netstream.Start(v, "FadeAllMusic");
+				netstream.Start(v, "DisableDynamicMusic");
 			end;
 		end;
 	end;
@@ -341,8 +343,8 @@ local COMMAND = Clockwork.command:New("FadeSound");
 		
 		local duration = arguments[2] or 4;
 		
-		Clockwork.datastream:Start(player, "FadeOutCustomSound", {duration});
-		Clockwork.datastream:Start(target, "FadeOutCustomSound", {duration});
+		netstream.Start(player, "FadeOutCustomSound", {duration});
+		netstream.Start(target, "FadeOutCustomSound", {duration});
 	end;
 COMMAND:Register();
 
@@ -355,7 +357,7 @@ local COMMAND = Clockwork.command:New("FadeSoundGlobal");
 
 	-- Called when the command has been run.
 	function COMMAND:OnRun(player, arguments)
-		Clockwork.datastream:Start(nil, "FadeOutCustomSound", {arguments[2] or 4});
+		netstream.Start(nil, "FadeOutCustomSound", {arguments[2] or 4});
 	end;
 COMMAND:Register();
 
@@ -379,7 +381,7 @@ local COMMAND = Clockwork.command:New("FadeSoundRadius");
 		local duration = arguments[2] or 4;
 		
 		for k, v in pairs (players) do
-			Clockwork.datastream:Start(v, "FadeOutCustomSound", {duration});
+			netstream.Start(v, "FadeOutCustomSound", {duration});
 		end;
 	end;
 COMMAND:Register();
@@ -404,8 +406,8 @@ local COMMAND = Clockwork.command:New("ChangeVolume");
 		local newVolume = arguments[2] or 1;
 		local duration = arguments[3] or 4;
 		
-		Clockwork.datastream:Start(player, "CustomSoundChangeVolume", {newVolume, duration});
-		Clockwork.datastream:Start(target, "CustomSoundChangeVolume", {newVolume, duration});
+		netstream.Start(player, "CustomSoundChangeVolume", {newVolume, duration});
+		netstream.Start(target, "CustomSoundChangeVolume", {newVolume, duration});
 	end;
 COMMAND:Register();
 
@@ -421,7 +423,7 @@ local COMMAND = Clockwork.command:New("ChangeVolumeGlobal");
 		local newVolume = arguments[1] or 1;
 		local duration = arguments[2] or 4;
 		
-		Clockwork.datastream:Start(nil, "CustomSoundChangeVolume", {newVolume, duration});
+		netstream.Start(nil, "CustomSoundChangeVolume", {newVolume, duration});
 	end;
 COMMAND:Register();
 
@@ -446,7 +448,7 @@ local COMMAND = Clockwork.command:New("ChangeVolumeRadius");
 		local duration = arguments[3] or 4;
 		
 		for k, v in pairs (players) do
-			Clockwork.datastream:Start(v, "CustomSoundChangeVolume", {newVolume, duration});
+			netstream.Start(v, "CustomSoundChangeVolume", {newVolume, duration});
 		end;
 	end;
 COMMAND:Register();
@@ -471,8 +473,8 @@ local COMMAND = Clockwork.command:New("ChangePitch");
 		local newPitch = arguments[2] or 1;
 		local duration = arguments[3] or 4;
 		
-		Clockwork.datastream:Start(player, "CustomSoundChangePitch", {newPitch, duration});
-		Clockwork.datastream:Start(target, "CustomSoundChangePitch", {newPitch, duration});
+		netstream.Start(player, "CustomSoundChangePitch", {newPitch, duration});
+		netstream.Start(target, "CustomSoundChangePitch", {newPitch, duration});
 	end;
 COMMAND:Register();
 
@@ -488,7 +490,7 @@ local COMMAND = Clockwork.command:New("ChangePitchGlobal");
 		local newPitch = arguments[1] or 1;
 		local duration = arguments[2] or 4;
 		
-		Clockwork.datastream:Start(nil, "CustomSoundChangePitch", {newPitch, duration});
+		netstream.Start(nil, "CustomSoundChangePitch", {newPitch, duration});
 	end;
 COMMAND:Register();
 
@@ -513,7 +515,7 @@ local COMMAND = Clockwork.command:New("ChangePitchRadius");
 		local duration = arguments[3] or 4;
 		
 		for k, v in pairs (players) do
-			Clockwork.datastream:Start(v, "CustomSoundChangePitch", {newPitch, duration});
+			netstream.Start(v, "CustomSoundChangePitch", {newPitch, duration});
 		end;
 	end;
 COMMAND:Register();
@@ -553,7 +555,7 @@ properties.Add("heal", {
 properties.Add("unpk", {
 	MenuLabel = "Unpermakill",
 	Order = 666,
-	MenuIcon = "icon16/add.png",
+	MenuIcon = "icon16/pill_add.png",
 	Filter = function(self, ent, ply)
 		if !IsValid(ent) or !IsValid(ply) or !ply:IsAdmin() then return false end
 		if !ent:IsPlayer() then
@@ -577,6 +579,68 @@ properties.Add("unpk", {
 			end
 			
 			Clockwork.kernel:RunCommand("CharUnPermakill", ent:Name())
+		end
+	end,
+});
+
+properties.Add("unpkstay", {
+	MenuLabel = "Unpermakill (Stay)",
+	Order = 666,
+	MenuIcon = "icon16/pill_go.png",
+	Filter = function(self, ent, ply)
+		if !IsValid(ent) or !IsValid(ply) or !ply:IsAdmin() then return false end
+		if !ent:IsPlayer() then
+			if Clockwork.entity:IsPlayerRagdoll(ent) then
+				ent = Clockwork.entity:GetPlayer(ent);
+			else
+				return false;
+			end
+		end
+
+		return !ent:Alive();
+	end,
+	Action = function(self, ent)
+		if IsValid(ent) then
+			if !ent:IsPlayer() then
+				if Clockwork.entity:IsPlayerRagdoll(ent) then
+					ent = Clockwork.entity:GetPlayer(ent);
+				else
+					return false;
+				end
+			end
+			
+			Clockwork.kernel:RunCommand("CharUnPermakillStay", ent:Name())
+		end
+	end,
+});
+
+properties.Add("smite", {
+	MenuLabel = "Smite",
+	Order = 150,
+	MenuIcon = "icon16/weather_lightning.png",
+	Filter = function(self, ent, ply)
+		if !IsValid(ent) or !IsValid(ply) or !ply:IsAdmin() then return false end
+		if !ent:IsPlayer() then
+			if Clockwork.entity:IsPlayerRagdoll(ent) then
+				ent = Clockwork.entity:GetPlayer(ent);
+			else
+				return false;
+			end
+		end
+
+		return ent:Alive();
+	end,
+	Action = function(self, ent)
+		if IsValid(ent) then
+			if !ent:IsPlayer() then
+				if Clockwork.entity:IsPlayerRagdoll(ent) then
+					ent = Clockwork.entity:GetPlayer(ent);
+				else
+					return false;
+				end
+			end
+			
+			Clockwork.kernel:RunCommand("PlySmite", ent:Name())
 		end
 	end,
 });

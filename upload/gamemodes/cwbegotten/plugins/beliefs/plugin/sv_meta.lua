@@ -25,6 +25,8 @@ function playerMeta:HandleXP(amount, bIgnoreModifiers)
 		end
 		
 		if amount > 0 then
+			newAmount = newAmount * config.Get("xp_modifier"):Get();
+		
 			-- Belief gain bonuses.
 			if self:HasBelief("gifted") then
 				newAmount = newAmount + (amount * 0.25);
@@ -101,7 +103,7 @@ end
 function playerMeta:ResetBeliefs()
 	self:SetCharacterData("beliefs", {});
 	--self:SetCharacterData("subfaith", nil);
-	self:SetSharedVar("subfaith", nil);
+	self:SetNetVar("subfaith", nil);
 	self.cwCharacter.subfaith = nil;
 	self:SetSacramentLevel(1);
 

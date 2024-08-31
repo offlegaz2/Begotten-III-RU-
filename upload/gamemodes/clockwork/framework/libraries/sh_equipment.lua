@@ -137,6 +137,8 @@ if SERVER then
 				player:SetCharacterData(itemTable.equipmentSaveString, GetDataFromItem(itemTable));
 			end
 		end
+		
+		return true;
 	end
 
 	function Clockwork.equipment:UnequipItem(player, itemTable, slot, bNoRemove)
@@ -570,7 +572,7 @@ else
 			
 			local ragdollEntity = player:GetRagdollEntity();
 			
-			if (ragdollEntity) then
+			if (ragdollEntity) and !ragdollEntity:IsDormant() then
 				local ragdollState = player:GetDTInt(INT_RAGDOLLSTATE);
 				
 				if ragdollState != 0 and ragdollState != RAGDOLL_NONE then
@@ -624,6 +626,8 @@ else
 				if !equipmentModel then
 					equipmentModel = ClientsideModel(itemTable.model, RENDERGROUP_BOTH);
 					
+					if !IsValid(equipmentModel) then continue end;
+					
 					local modelScale = itemTable.attachmentModelScale;
 
 					if (itemTable.GetAttachmentModelScale) then
@@ -656,31 +660,37 @@ else
 						entityMatrix:Scale(modelScale);
 						equipmentModel:EnableMatrix("RenderMultiply", entityMatrix);
 					end
-					
-					plyTab.equipmentSlotModels[itemTable.itemID] = equipmentModel;
-					
+
 					local position, angles, bone = GetRealPosition(equipmentModel, player, ragdollEntity, itemTable, string.find(slot, "Offhand"));
-					
+
 					if position and angles then
 						equipmentModel:SetPos(position);
 						equipmentModel:SetAngles(angles);
 					end
 					
 					if bone then
-						equipmentModel:FollowBone(ragdollEntity or player, bone); 
+						equipmentModel:FollowBone(ragdollEntity or player, bone);
+					end
+					
+					plyTab.equipmentSlotModels[itemTable.itemID] = equipmentModel;
+					
+					if ragdollEntity then
+						ragdollEntity.equipmentCreatedThisTick = true;
 					end
 				end
-				
-				-- Old code to manually setpos equipment every frame. Was very laggy.
-				--[[local position, angles = GetRealPosition(equipmentModel, player, ragdollEntity, itemTable, string.find(slot, "Offhand"));
-
-				if (position and angles) then
-					equipmentModel:SetPos(position);
-					equipmentModel:SetAngles(angles);
-				end]]--
 			end
 		end
 		
+		-- Extremely ghetto fix for equipment models being rotated wrong when leaving render distance and returning.
+		if ragdollEntity then
+			if ragdollEntity.equipmentCreatedThisTick then
+				ragdollEntity:SetPos(ragdollEntity:GetPos() + Vector(0, 0, 1));
+				ragdollEntity:SetPos(ragdollEntity:GetPos() - Vector(0, 0, 1));
+				
+				ragdollEntity.equipmentCreatedThisTick = false;
+			end
+		end
+
 		plyTab.equipmentDrawnThisTick = true;
 	end);
 	

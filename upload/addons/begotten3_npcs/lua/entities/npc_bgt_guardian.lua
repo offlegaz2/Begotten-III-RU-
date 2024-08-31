@@ -106,6 +106,8 @@ ENT.ArmorPiercing = 80;
 
 ENT.Damage = 25;
 
+ENT.MaxMultiHit = 1;
+
 
 
 -- Detection --
@@ -145,6 +147,20 @@ ENT.PossessionViews = {
 }
 
 ENT.PossessionBinds = {
+	[IN_JUMP] = {{
+		coroutine = true,
+		onkeydown = function(self)
+			if(!self:IsOnGround()) then return; end
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,700) + self:GetForward() * 100);
+
+			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	}},
+
 	
 	[IN_ATTACK] = {{
 		
@@ -241,6 +257,7 @@ if SERVER then
 	
 	function ENT:OnParried()
 		self.nextMeleeAttack = CurTime() + 2;
+		self:ResetSequence(ACT_IDLE);
 	end
 	
 	
@@ -319,7 +336,7 @@ if SERVER then
 					ragdoll:Fire("fadeandremove", 1);
 					ragdoll:EmitSound("begotten/npc/burn.wav");
 					
-					if cwRituals and cwItemSpawner then
+					if cwRituals and cwItemSpawner and !hook.Run("GetShouldntThrallDropCatalyst", ragdoll) then
 						local randomItem;
 						local spawnable = cwItemSpawner:GetSpawnableItems(true);
 						local lootPool = {};
@@ -423,9 +440,6 @@ if SERVER then
 	end;
 	
 	function ENT:OnAnimEvent()
-		
-		local sha = false
-		
 		if self:IsAttacking() and self:GetCycle() > 0.3 then
 			
 			self:Attack({

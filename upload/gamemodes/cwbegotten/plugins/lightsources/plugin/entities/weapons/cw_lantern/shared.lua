@@ -68,7 +68,7 @@ SWEP.WElements = {
 }
 
 function SWEP:Deploy()
-	self.Owner:SetSharedVar("lanternOnHip", false);
+	self.Owner:SetNetVar("lanternOnHip", false);
 end;
 
 function SWEP:Initialize()
@@ -97,6 +97,14 @@ function SWEP:Holster()
 		end
 	end]]--
 	
+	if self.OnHolster then
+		self:OnHolster();
+	end
+	
+	if CLIENT then
+		self:RemoveModels();
+	end
+	
 	return true
 end
 
@@ -104,14 +112,71 @@ function SWEP:OnRemove()
 	self:Holster()
 end
 
-function SWEP:Think()
-	if (IsValid(self.Owner)) then
-		if (self.Owner:IsNPC() or self.Owner:IsNextBot()) then
-			self.Owner:StripWeapon(self:GetClass());
+function SWEP:RemoveModels()
+	if self.vRenderOrder then
+		for k, name in ipairs( self.vRenderOrder ) do
+			local v = self.VElements[name]
+			if (!v) then self.vRenderOrder = nil break end
 			
-			return;
+			local model = v.modelEnt;
+			
+			if (v.type == "Model" and IsValid(model)) then
+				model:Remove();
+			end
+		end
+	end
+	
+	if self.wRenderOrder then
+		for k, name in pairs( self.wRenderOrder ) do
+			local v = self.WElements[name]
+			if (!v) then self.wRenderOrder = nil break end
+			
+			local model = v.modelEnt;
+
+			if (v.type == "Model" and IsValid(model)) then
+				model:Remove();
+			end
+		end
+	end
+end
+
+function SWEP:Think()
+	if SERVER then
+		local curTime = CurTime();
+		local player = self.Owner;
+		
+		-- Last ditch effort to fix the clientside itemtable desync.
+		if !self.nextItemSend or self.nextItemSend <= curTime then
+			if IsValid(player) and player:IsPlayer() then
+				local itemTable = item.GetByWeapon(self);
+					
+				if itemTable then
+					netstream.Start(player, "WeaponItemData", {
+						definition = item.GetDefinition(itemTable, true),
+						weapon = self:EntIndex()
+					})
+
+					if self:GetNWString("ItemID") ~= itemTable.itemID then
+						self:SetNWString(
+							"ItemID", tostring(itemTable.itemID)
+						)
+					end
+					
+					self.cwItemTable = itemTable
+				end
+			end
+			
+			self.nextItemSend = curTime + math.random(1, 5);
+		end
+		
+		if (IsValid(player)) then
+			if (player:IsNPC() or player:IsNextBot()) then
+				player:StripWeapon(self:GetClass());
+				
+				return;
+			end;
 		end;
-	end;
+	end
 end;
 
 if CLIENT then

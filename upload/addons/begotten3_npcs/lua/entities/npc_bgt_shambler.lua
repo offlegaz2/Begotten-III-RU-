@@ -45,6 +45,7 @@ ENT.ClimbUpAnimation = ACT_ZOMBIE_CLIMB_UP--ACT_ZOMBIE_CLIMB_UP --pull_grenade
 ENT.ClimbOffset = Vector(-14, 0, 0)
 ENT.ArmorPiercing = 10;
 ENT.Damage = 10;
+ENT.MaxMultiHit = 1;
 -- Detection --
 ENT.EyeBone = "ValveBiped.Bip01_Spine4"
 ENT.EyeOffset = Vector(7.5, 0, 5)
@@ -63,6 +64,20 @@ ENT.PossessionViews = {
   }
 }
 ENT.PossessionBinds = {
+	[IN_JUMP] = {{
+		coroutine = true,
+		onkeydown = function(self)
+			if(!self:IsOnGround()) then return; end
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,700) + self:GetForward() * 100);
+
+			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	}},
+
   [IN_ATTACK] = {{
     coroutine = true,
     onkeydown = function(self)
@@ -105,6 +120,7 @@ function ENT:OnLost()
 end
 function ENT:OnParried()
 	self.nextMeleeAttack = CurTime() + 2;
+	self:ResetSequence(ACT_IDLE);
 end
   -- Init/Think --
   function ENT:CustomInitialize()
@@ -174,7 +190,7 @@ end
 							if itemInstance then
 								local entity = Clockwork.entity:CreateItem(nil, itemInstance, ragdoll:GetPos() + Vector(0, 0, 16));
 								
-								entity.lifeTime = CurTime() + cwItemSpawner.ItemLifetime;
+								entity.lifeTime = CurTime() + config.GetVal("loot_item_lifetime");
 								
 								table.insert(cwItemSpawner.ItemsSpawned, entity);
 							end
@@ -211,8 +227,45 @@ end
 	self:OnRangeAttack()
   end
   
-  function ENT:OnChaseEnemy()
+  function ENT:OnChaseEnemy(enemy)
 	local curTime = CurTime();
+
+	if(!self.nextGateCheck or self.nextGateCheck < curTime) then
+		self.nextGateCheck = curTime + 5;
+
+		local data = {}
+		data.start = self:GetPos() + Vector(0,0,45);
+		data.endpos = data.start + self:GetForward() * 50;
+		data.filter = self;
+
+		local facing = util.TraceLine(data).Entity;
+		
+		if(IsValid(facing) and facing.GetName and facing:GetName() == "gate_door") then
+			self:MoveBackward(150);
+			self:EmitSound(self.PainSounds[math.random(#self.PainSounds)], 100, self.pitch);
+			self:EmitSound("Zombie.AttackMiss");
+			self:Jump(400, function() self:SetVelocity(self:GetVelocity() + self:GetForward() * 50); end);
+
+		end
+
+	end
+
+	if(self:GetPos():DistToSqr(enemy:GetPos()) > 122500 and self:IsOnGround()) then
+		if(!self.nextJump or self.nextJump < curTime) then
+			self.nextJump = curTime + math.random(2,4);
+		
+			local ang = (self:GetPos() - enemy:GetPos()):Angle()
+			self:SetAngles(Angle(0, ang.y + 180, 0))
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,700) + self:GetForward() * 500);
+
+			self:EmitSound("begotten/npc/brute/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	end
+
 	if (!self.nextId or self.nextId < curTime) then
 		self.nextId = curTime + math.random(7, 15)
 		self:EmitSound("begotten/npc/suitor/amb_hunt0"..math.random(1,3)..".mp3", 100, self.pitch)
@@ -223,7 +276,6 @@ end
 	self:OnRangeAttack()
   end;
   function ENT:OnAnimEvent()
-	local sha = false
     if self:IsAttacking() and self:GetCycle() > 0.3 then
       self:Attack({
         damage = self.Damage,

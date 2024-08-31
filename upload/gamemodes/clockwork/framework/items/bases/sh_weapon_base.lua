@@ -350,12 +350,12 @@ function ITEM:OnWeaponGiven(player, weapon)
 	local clipOne = self:GetData("ClipOne");
 	local clipTwo = self:GetData("ClipTwo");
 	
-	if (clipOne > 0) then
+	if clipOne and (clipOne > 0) then
 		weapon:SetClip1(clipOne);
 		self:SetData("ClipOne", 0);
 	end;
 	
-	if (clipTwo > 0) then
+	if clipTwo and (clipTwo > 0) then
 		weapon:SetClip2(clipTwo);
 		self:SetData("ClipTwo", 0);
 	end;
@@ -365,8 +365,8 @@ end;
 function ITEM:OnUse(player, itemEntity, interactItemTable)
 	local faction = player:GetFaction();
 	local subfaction = player:GetSubfaction();
-	local kinisgerOverride = player:GetSharedVar("kinisgerOverride");
-	local kinisgerOverrideSubfaction = player:GetSharedVar("kinisgerOverrideSubfaction");
+	local kinisgerOverride = player:GetNetVar("kinisgerOverride");
+	local kinisgerOverrideSubfaction = player:GetNetVar("kinisgerOverrideSubfaction");
 	
 	if (table.HasValue(self.excludeFactions, kinisgerOverride or faction)) then
 		Schema:EasyText(player, "peru", "You are not the correct faction for this item!")

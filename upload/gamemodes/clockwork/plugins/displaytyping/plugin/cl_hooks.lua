@@ -24,8 +24,10 @@ function cwDisplayTyping:PostDrawTranslucentRenderables()
 	
 		self.storedPlayers = {};
 		
+		local localPlayer = Clockwork.Client;
+		
 		for i, player in ipairs(_player.GetAll()) do
-			if ((player:GetNetVar("Typing") or 0) != 0) then
+			if player ~= localPlayer and (player:GetNetVar("Typing") or 0) != 0 then
 				table.insert(self.storedPlayers, player);
 			end
 		end
@@ -211,6 +213,8 @@ function cwDisplayTyping:ChatBoxTextChanged(previousText, newText)
 			end
 		end
 		
-		RunConsoleCommand("cwTypingStart", "n")
+		if hook.Run("ShouldNotDisplayTyping", newText) ~= false then
+			RunConsoleCommand("cwTypingStart", "n")
+		end
 	end
 end

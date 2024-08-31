@@ -301,7 +301,6 @@ function GM:Initialize()
 
 	Clockwork.ConVars.ESPTIME = Clockwork.kernel:CreateClientConVar("cwESPTime", 1, true, true)
 	Clockwork.ConVars.ADMINESP = Clockwork.kernel:CreateClientConVar("cwAdminESP", 0, true, true)
-	Clockwork.ConVars.ESPBARS = Clockwork.kernel:CreateClientConVar("cwESPBars", 1, true, true)
 	Clockwork.ConVars.ITEMESP = Clockwork.kernel:CreateClientConVar("cwItemESP", 0, false, true)
 	Clockwork.ConVars.PROPESP = Clockwork.kernel:CreateClientConVar("cwPropESP", 0, false, true)
 	Clockwork.ConVars.SPAWNESP = Clockwork.kernel:CreateClientConVar("cwSpawnESP", 0, false, true)
@@ -1041,18 +1040,6 @@ function GM:HUDPaintForeground()
 		y = scrH - (scrH * 0.15);
 		
 		Clockwork.kernel:DrawBar(x, y, width, height, Color(102, 0, 0, 200), info.text or "Progress Bar", info.percentage or 100, 100, info.flash);
-	else
-		info = Clockwork.plugin:Call("GetPostProgressBarInfo");
-		
-		if (info) then
-			local width = (scrW / 2) - 64;
-			local height = 16;
-			local x, y = Clockwork.kernel:GetScreenCenter();
-			x = x - (scrW / 4);
-			y = scrH - (scrH * 0.15);
-			
-			Clockwork.kernel:DrawBar(x, y, width, height, Color(102, 0, 0, 200), info.text or "Progress Bar", info.percentage or 100, 100, info.flash);
-		end;
 	end;
 
 	if (Clockwork.player:IsAdmin(Clockwork.Client)) then
@@ -2317,9 +2304,9 @@ function GM:HUDDrawTargetID()
 					if (player and Clockwork.Client != player) then
 						if (Clockwork.plugin:Call("ShouldDrawPlayerTargetID", player)) then
 							if (!Clockwork.player:IsNoClipping(player)) then
-								if (Clockwork.lastRecognizeCheckedPlayer and Clockwork.lastRecognizeCheckedPlayer != player) then
-									Clockwork.Client:SetSharedVar("TargetKnows", true)
-								end
+								--[[if (Clockwork.nextCheckRecognises and Clockwork.nextCheckRecognises[2] != player) then
+									Clockwork.Client:SetNetVar("TargetKnows", true)
+								end]]--
 								
 								local playerEntity = nil
 								local position = Clockwork.plugin:Call("GetPlayerTypingDisplayPosition", player)
@@ -2334,9 +2321,9 @@ function GM:HUDDrawTargetID()
 								if (!position) then
 									local headBone = "ValveBiped.Bip01_Head1"
 									
-									if (string.find(playerEntity:GetModel(), "vortigaunt")) then
+									--[[if (string.find(playerEntity:GetModel(), "vortigaunt")) then
 										headBone = "ValveBiped.Head"
-									end
+									end]]--
 									
 									local headID = playerEntity:LookupBone(headBone)
 
@@ -2369,37 +2356,13 @@ function GM:HUDDrawTargetID()
 								
 								local screenPosition = position:ToScreen()
 								local x, y = screenPosition.x, screenPosition.y
-								local clientFaction = Clockwork.Client:GetFaction();
-								local playerFaction = player:GetFaction();
+								local teamColor = _team.GetColor(player:Team());
 								
 								if (Clockwork.player:DoesRecognise(player, RECOGNISE_PARTIAL)) then
-									local teamColor = _team.GetColor(player:Team());
-									local text = string.Explode("\n", Clockwork.plugin:Call("GetTargetPlayerName", player))
+									local text = string.Explode("\n", hook.Run("GetTargetPlayerName", player) or player:Name())
 									local newY
 									
-									if playerFaction == "Gatekeeper" and clientFaction ~= "Gatekeeper" and clientFaction ~= "Holy Hierarchy" then
-										local clothesItem = player:GetClothesEquipped();
-										
-										if !clothesItem or (clothesItem.faction and clothesItem.faction ~= playerFaction) then
-											teamColor = Color(200, 200, 200, 255);
-										end
-									elseif playerFaction == "Children of Satan" and clientFaction ~= "Children of Satan" then
-										if not string.find(player:GetModel(), "models/begotten/satanists") then
-											local kinisgerOverride = player:GetNetVar("kinisgerOverride");
-											
-											if kinisgerOverride then
-												local classTable = Clockwork.class:GetStored()[kinisgerOverride];
-												
-												if classTable then
-													teamColor = _team.GetColor(classTable.index) or Color(200, 200, 200, 255);
-												else
-													teamColor = Color(200, 200, 200, 255);
-												end
-											else
-												teamColor = Color(200, 200, 200, 255);
-											end
-										end
-									end
+									teamColor = hook.Run("OverrideTeamColor", player, true) or teamColor;
 									
 									for k, v in pairs(text) do
 										newY = Clockwork.kernel:DrawInfo(v, x, y, teamColor, alpha)
@@ -2411,31 +2374,8 @@ function GM:HUDDrawTargetID()
 								else
 									local unrecognisedName, usedPhysDesc = Clockwork.player:GetUnrecognisedName(player)
 									local wrappedTable = {unrecognisedName}
-									local teamColor = _team.GetColor(player:Team())
 									
-									if playerFaction == "Gatekeeper" and clientFaction ~= "Gatekeeper" and clientFaction ~= "Holy Hierarchy" then
-										local clothesItem = player:GetClothesEquipped();
-										
-										if !clothesItem or (clothesItem.faction and clothesItem.faction ~= playerFaction) then
-											teamColor = Color(200, 200, 200, 255);
-										end
-									elseif playerFaction == "Children of Satan" and clientFaction ~= "Children of Satan" then
-										if not string.find(player:GetModel(), "models/begotten/satanists") then
-											local kinisgerOverride = player:GetNetVar("kinisgerOverride");
-											
-											if kinisgerOverride then
-												local classTable = Clockwork.class:GetStored()[kinisgerOverride];
-												
-												if classTable then
-													teamColor = _team.GetColor(classTable.index) or Color(200, 200, 200, 255);
-												else
-													teamColor = Color(200, 200, 200, 255);
-												end
-											else
-												teamColor = Color(200, 200, 200, 255);
-											end
-										end
-									end
+									teamColor = hook.Run("OverrideTeamColor", player) or teamColor;
 									
 									local result;
 									local newY;
@@ -2512,14 +2452,10 @@ function GM:HUDDrawTargetID()
 									y = Clockwork.kernel:DrawInfo("Press <X> to inspect this character.", x, y, colorWhite, alpha)
 								end
 								
-								local playerSteamID64 = player:SteamID64()
-								local nextCheckRecognises = Clockwork.nextCheckRecognises[playerSteamID64]
-
-								if (!nextCheckRecognises or curTime >= nextCheckRecognises) then
+								if (!Clockwork.nextCheckRecognises or curTime >= Clockwork.nextCheckRecognises[1] or Clockwork.nextCheckRecognises[2] != player) then
 									Clockwork.datastream:Start("GetTargetRecognises", player)
 									
-									Clockwork.nextCheckRecognises[playerSteamID64] = curTime + 2
-									Clockwork.lastRecognizeCheckedPlayer = player
+									Clockwork.nextCheckRecognises = {curTime + 2, player}
 								end
 							end
 						end
@@ -2638,65 +2574,46 @@ end
 	@returns Table The text, flash, and percentage of the progress bar.
 --]]
 
--- I should really improve this later to use hooks.
 function GM:GetProgressBarInfo()
-	local action, percentage = Clockwork.player:GetAction(Clockwork.Client, true)
+	--[[local action, percentage = Clockwork.player:GetAction(Clockwork.Client, true)
 
-	--[[if (!Clockwork.Client:Alive() and action == "spawn") then
+	if (!Clockwork.Client:Alive() and action == "spawn") then
 		return {text = "You will be respawned shortly.", percentage = percentage, flash = percentage < 10}
 	else]]
 	
 	if Clockwork.Client:Alive() then
-		if !Clockwork.Client:IsRagdolled() then
+		local action, percentage = Clockwork.player:GetAction(Clockwork.Client, true)
+		local ragdolled = Clockwork.Client:IsRagdolled();
+		
+		if ragdolled then
+			if (action == "unragdoll") then
+				if (Clockwork.Client:GetRagdollState() == RAGDOLL_FALLENOVER) then
+					return {text = "You are regaining stability.", percentage = percentage, flash = percentage < 10}
+				else
+					return {text = "You are regaining conciousness.", percentage = percentage, flash = percentage < 10}
+				end
+			else
+				local info = hook.Run("GetProgressBarInfoAction", action, percentage);
+				
+				if info then return info end;
+			
+				if (action != "unragdoll" and hook.Run("PlayerCanGetUp", action)) then
+					return {text = "Press 'jump' to get up.", percentage = 100}
+				end
+			end
+		elseif action then
+			local info = hook.Run("GetProgressBarInfoAction", action, percentage);
+			
+			if info then return info end;
+			
 			if (action == "lock") then
 				return {text = "The door is being locked.", percentage = percentage, flash = percentage < 10}
 			elseif (action == "unlock") then
 				return {text = "The door is being unlocked.", percentage = percentage, flash = percentage < 10}
-			elseif (action == "raise") then
-				local raiseText = "RAISING...";
-				
-				if (Clockwork.Client:IsWeaponRaised()) then
-					raiseText = "LOWERING..."
-				end;
-				
-				return {text = raiseText, percentage = percentage, flash = percentage < 10}
-			elseif (action == "pickupragdoll") then
-				return {text = "You are picking up a body. Click to cancel.", percentage = percentage, flash = percentage < 10}
-			elseif (action == "crafting") then
-				local craftVerb = Clockwork.Client:GetNetVar("cwProgressBarVerb") or  "crafting";
-				local itemName = Clockwork.Client:GetNetVar("cwProgressBarItem") or "an item";
-				
-				return {text = "You are "..craftVerb.." "..itemName..". Click to cancel.", percentage = percentage, flash = percentage < 0}
-			elseif (action == "ritualing") then
-				return {text = "You are performing a ritual. Click to cancel.", percentage = percentage, flash = percentage < 0}
-			elseif (action == "burn_longship") then
-				return {text = "You are setting the longship alight. Click to cancel.", percentage = percentage, flash = percentage < 10};
-			elseif (action == "extinguish_longship") then
-				return {text = "You are trying to put out the flames. Click to cancel.", percentage = percentage, flash = percentage < 10};
-			elseif (action == "repair_longship") then
-				return {text = "You are making repairs to the longship. Click to cancel.", percentage = percentage, flash = percentage < 10};
-			elseif (action == "turn_scrapfactory_valve") then
-				return {text = "You are turning the valve.", percentage = percentage, flash = percentage < 10};
-			elseif (action == "hell_teleporting") then
-				return {text = "You are using dark magic to teleport to Hell.", percentage = percentage, flash = percentage < 10};
-			elseif (action == "putting_on_armor") then
-				return {text = "You are putting on your armor. Click to cancel.", percentage = percentage, flash = percentage < 10};
-			elseif (action == "taking_off_armor") then
-				return {text = "You are taking off your armor. Click to cancel.", percentage = percentage, flash = percentage < 10};
 			end;
-		elseif (action == "unragdoll") then
-			if (Clockwork.Client:GetRagdollState() == RAGDOLL_FALLENOVER) then
-				return {text = "You are regaining stability.", percentage = percentage, flash = percentage < 10}
-			else
-				return {text = "You are regaining conciousness.", percentage = percentage, flash = percentage < 10}
-			end
-		elseif (Clockwork.Client:GetRagdollState() == RAGDOLL_FALLENOVER) then
-			local fallenOver = Clockwork.player:GetAction(Clockwork.Client) != "unragdoll"--Clockwork.Client:GetDTBool(BOOL_FALLENOVER)
 			
-			if (fallenOver and hook.Run("PlayerCanGetUp")) then
-				return {text = "Press 'jump' to get up.", percentage = 100}
-			end
-		end
+			return {text = "You are performing an action.", percentage = percentage};
+		end;
 	end;
 end
 
@@ -3803,11 +3720,6 @@ function GM:PlayerCanShowUnrecognised(player, x, y, color, alpha, flashAlpha)
 	end]]--
 	
 	return true
-end
-
--- Called when the target player's name is needed.
-function GM:GetTargetPlayerName(player)
-	return player:Name()
 end
 
 -- Called when a player begins typing.

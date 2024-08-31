@@ -69,7 +69,7 @@ local PROWESS = cwBeliefs.beliefTrees:New("prowess")
 			},
 			["repulsive_riposte"] = {
 				name = "Repulsive Riposte",
-				description = "Riposte attack damage from successful parries is increased from 200% to 300%.";
+				description = "Unlocks the ability to chain-parry, extending your active parry window by 0.15 seconds every time you connect a parry, thus allowing you to parry multiple opponents with greater ease. Multi-parries will successively restore more stamina the more targets you parry. Riposte attack damage from successful parries is increased from 200% to 250%.";
 				lockedSubfactions = {"Auxiliary"},
 				requirements = {"fighter", "parrying"},
 				row = 3,
@@ -107,13 +107,13 @@ local PROWESS = cwBeliefs.beliefTrees:New("prowess")
 		[4] = {
 			["deflection"] = {
 				name = "Deflection",
-				description = "Successful deflections (perfect blocks) now restore +15 additional points of stamina and +5 more points of stability, as well as prevent enemy attacks for 1 second.",
+				description = "Successful deflections (perfect blocks) now restore +15 points of stamina and +5 points of stability, as well as prevent enemy attacks for a minimum of 1 second.",
 				requirements = {"fighter"},
 				row = 2,
 			},
 			["sidestep"] = {
 				name = "Sidestep",
-				description = "Successful deflections now restore +10 more points of stamina and +5 more points of stability, and also prevents enemy attacks for an additional second.",
+				description = "Successful deflections now restore +10 more points of stamina and stability, and also prevents enemy attacks for an additional second.",
 				lockedSubfactions = {"Auxiliary"},
 				requirements = {"fighter", "deflection"},
 				row = 3,
@@ -122,7 +122,7 @@ local PROWESS = cwBeliefs.beliefTrees:New("prowess")
 		[5] = {
 			["strength"] = {
 				name = "Strength",
-				description = "Unlocks the ability to use great weapons. Also unlocks the ability to reload crossbows.",
+				description = "Unlocks the ability to use great weapons. Prevents being disarmed when taking damage if using a throwable weapon in its melee stance. Also unlocks the ability to reload crossbows.",
 				requirements = {"fighter"},
 				row = 2,
 			},

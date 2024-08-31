@@ -201,6 +201,7 @@ function ENT:Initialize()
 	end)
 	self:_BaseInitialize()
 	self:CustomInitialize()
+	self:InitBounds()
 	if SERVER then
 		self._DrGBaseRelationshipReady = true
 		self:UpdateRelationships()
@@ -209,8 +210,17 @@ function ENT:Initialize()
 		self:UpdateAI()
 	end
 end
+
+function ENT:InitBounds()
+    if self:GetSurroundingBounds() == self:WorldSpaceAABB() then
+        local collisionMin, collisionMax = self:GetCollisionBounds()
+        self:SetSurroundingBounds(Vector(collisionMin.x * 1.8, collisionMin.y * 1.8, collisionMin.z * 1.8), Vector(collisionMax.x * 1.8, collisionMax.y * 1.8, collisionMax.z * 1.8))
+    end
+end
+
 function ENT:_BaseInitialize() end
 function ENT:CustomInitialize() end
+
 function ENT:_InitModules()
 	if SERVER then
 		self:_InitLocomotion()
@@ -231,18 +241,29 @@ end
 
 -- Think --
 function ENT:Think()
+	local curTime = CurTime();
+	
 	self:_HandleAnimations()
 	self:_HandleMovements()
+	
 	if SERVER then
 		-- long delays
-		if CurTime() > self._DrGBaseThinkDelayLong then
-			self._DrGBaseThinkDelayLong = CurTime() + 1
+		if curTime > self._DrGBaseThinkDelayLong then
+			local pos = self:GetPos();
+			local tr = util.TraceLine({start = pos, endpos = pos - self:GetUp(), filter = self});
+			
+			if tr.HitSky or tr.HitNoDraw then
+				self:Remove();
+				return;
+			end
+		
+			self._DrGBaseThinkDelayLong = curTime + 1
 			self:_RegenHealth()
 			self:UpdateAI()
 		end
 		-- medium delays
-		if CurTime() > self._DrGBaseThinkDelayMedium then
-			self._DrGBaseThinkDelayMedium = CurTime() + 0.1
+		if curTime > self._DrGBaseThinkDelayMedium then
+			self._DrGBaseThinkDelayMedium = curTime + 0.1
 			self:UpdateAnimation()
 			self:UpdateSpeed()
 			-- update phys obj
@@ -257,8 +278,8 @@ function ENT:Think()
 			end
 		end
 		-- short delays
-		if CurTime() > self._DrGBaseThinkDelayShort then
-			self._DrGBaseThinkDelayShort = CurTime() + 0.05
+		if curTime > self._DrGBaseThinkDelayShort then
+			self._DrGBaseThinkDelayShort = curTime + 0.05
 			-- water level
 			local waterLevel = self:WaterLevel()
 			if self._DrGBaseWaterLevel ~= waterLevel then
@@ -288,22 +309,22 @@ function ENT:Think()
 		end
 	end
 	-- custom thinks
-	if CurTime() > self._DrGBaseBaseThinkDelay then
+	if curTime > self._DrGBaseBaseThinkDelay then
 		local delay = self:_BaseThink() or 0
-		self._DrGBaseBaseThinkDelay = CurTime() + delay
+		self._DrGBaseBaseThinkDelay = curTime + delay
 	end
-	if CurTime() > self._DrGBaseCustomThinkDelay then
+	if curTime > self._DrGBaseCustomThinkDelay then
 		local delay = self:CustomThink() or 0
-		self._DrGBaseCustomThinkDelay = CurTime() + delay
+		self._DrGBaseCustomThinkDelay = curTime + delay
 	end
 	if self:IsPossessed() and (SERVER or self:IsPossessedByLocalPlayer()) then
 		local possessor = self:GetPossessor()
 		if SERVER then possessor:SetPos(self:GetPos()) end
 		possessor:SetKeyValue("waterlevel", self:WaterLevel())
 		self:_HandlePossession(false)
-		if CurTime() > self._DrGBasePossessionThinkDelay then
+		if curTime > self._DrGBasePossessionThinkDelay then
 			local delay = self:PossessionThink(possessor) or 0
-			self._DrGBasePossessionThinkDelay = CurTime() + delay
+			self._DrGBasePossessionThinkDelay = curTime + delay
 		end
 	end
 end

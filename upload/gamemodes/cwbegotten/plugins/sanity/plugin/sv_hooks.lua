@@ -89,8 +89,8 @@ function cwSanity:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 				
 				if (player:GetFaith() != "Faith of the Dark" and entity:GetFaith() == "Faith of the Dark" and entity:HasBelief("blank_stare")) then
 					local entityFaction = entity:GetFaction();
-					local playerFaction = player:GetSharedVar("kinisgerOverride") or player:GetFaction();
-					local kinisgerOverride = entity:GetSharedVar("kinisgerOverride");
+					local playerFaction = player:GetNetVar("kinisgerOverride") or player:GetFaction();
+					local kinisgerOverride = entity:GetNetVar("kinisgerOverride");
 					local factionTable = Clockwork.faction:FindByID(entityFaction);
 					
 					if factionTable then
@@ -119,7 +119,12 @@ function cwSanity:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 				local isOnFire = entity:IsOnFire();
 			
 				if (isOnFire or class == "env_fire") then
-					sanityDecay = sanityDecay + 2; -- sanity gain from fires etc
+					sanityDecay = sanityDecay + 4; -- sanity gain from fires etc
+					
+					if cwBeliefs and player:HasBelief("acolyte") then
+						sanityDecay = sanityDecay + 4;
+					end
+					
 					nearFire = true;
 				end;
 			end;
@@ -135,7 +140,7 @@ function cwSanity:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 		
 		local cycle = cwDayNight.currentCycle;
 		local bNight = tobool(cycle == "night")
-		local playerFaction = player:GetSharedVar("kinisgerOverride") or player:GetFaction()
+		local playerFaction = player:GetNetVar("kinisgerOverride") or player:GetFaction()
 		
 		if (plyTab.LightColor) then
 			local requiredLight = 15;
@@ -195,7 +200,9 @@ function cwSanity:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 					sanityDecay = (sanityDecay - decay);
 				end
 			elseif (lastZone == "caves") then
-				sanityDecay = (sanityDecay - 2);
+				if !cwBeliefs or !player:HasBelief("embrace_the_darkness") then
+					sanityDecay = (sanityDecay - 2);
+				end
 			end;
 		end;
 
@@ -353,7 +360,7 @@ function cwSanity:PostPlayerSpawn(player, lightSpawn, changeClass, firstSpawn)
 		player.enemies = {}
 	end
 	
-	player:SetSharedVar("sanity", player:GetCharacterData("sanity", 100));
+	player:SetNetVar("sanity", player:GetCharacterData("sanity", 100));
 end
 
 function cwSanity:CanHearClass(listener, speaker, class)
@@ -361,7 +368,7 @@ function cwSanity:CanHearClass(listener, speaker, class)
 		for k, v in pairs(self.deafClasses) do
 			if k == class then
 				if v == true and IsValid(speaker) then
-					Clockwork.datastream:Start(listener, "SanitySpeech", speaker:GetPos());
+					netstream.Start(listener, "SanitySpeech", speaker:GetPos());
 				end
 			
 				return false;
@@ -374,8 +381,8 @@ end
 function cwSanity:OnePlayerHalfSecond(player)
 	local sanity = math.Round(player:GetCharacterData("sanity", 100));
 	
-	if player:GetSharedVar("sanity", 100) < sanity then
-		player:SetSharedVar("sanity", sanity);
+	if player:GetNetVar("sanity", 100) < sanity then
+		player:SetNetVar("sanity", sanity);
 	end
 end
 
@@ -398,7 +405,7 @@ function cwSanity:SanityDegrade(player, oldSanity, newSanity, amount)
 		--player:PlaySound("begotten/ui/sanity_damage.mp3", 100, 90)
 		
 		if (amount >= 5 and newSanity < 50) then
-			--Clockwork.datastream:Start(player, "SanityZoom")
+			--netstream.Start(player, "SanityZoom")
 		end
 	end
 end

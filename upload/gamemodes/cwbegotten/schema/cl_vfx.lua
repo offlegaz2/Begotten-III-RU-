@@ -137,10 +137,32 @@ function Schema:ShouldPlayerModifyBlur(entity)
 		elseif faction == "Children of Satan" and clientFaction ~= "Children of Satan" then
 			if entity:GetModel() == "models/begotten/satanists/wraitharmor.mdl" then
 				return true;
+			else
+				local helmet = entity:GetHelmetEquipped();
+				
+				if helmet and helmet.attributes then
+					return table.HasValue(helmet.attributes, "fear");
+				end
 			end
-		elseif faction == "Gatekeeper" and clientFaction == "Goreic Warrior" or clientFaction == "Children of Satan" then
+		elseif faction == "Gatekeeper" and clientFaction ~= "Gatekeeper" and clientFaction ~= "Holy Hierarchy" then
 			if entity:GetModel() == "models/begotten/gatekeepers/vexi.mdl" then
 				return true;
+			else
+				local helmet = entity:GetHelmetEquipped();
+				
+				if helmet and helmet.attributes then
+					return table.HasValue(helmet.attributes, "fear");
+				end
+			end
+		elseif faction == "Wanderer" then
+			if entity:GetModel() == "models/begotten/gatekeepers/vexi.mdl" or entity:GetModel() == "models/begotten/satanists/wraitharmor.mdl" then
+				return true;
+			else
+				local helmet = entity:GetHelmetEquipped();
+				
+				if helmet and helmet.attributes then
+					return table.HasValue(helmet.attributes, "fear");
+				end
 			end
 		end
 	end
@@ -187,7 +209,9 @@ function Schema:CalcView(player, origin, angles, fov)
 	local view = {origin = origin, angles = angles, fov = fov}
 
 	if (Clockwork.ConVars.SHOWCALCVIEW:GetInt() != 1) then
-		return
+		if Clockwork.Client:IsAdmin() then
+			return
+		end
 	end
 	
 	if Clockwork.Client:InVehicle() then
@@ -383,7 +407,9 @@ end;
 -- Called when the calc view table should be adjusted.
 function Schema:CalcViewAdjustTable(view)
 	if (Clockwork.ConVars.SHOWCALCVIEW:GetInt() != 1) then
-		return;
+		if Clockwork.Client:IsAdmin() then
+			return;
+		end
 	end
 
 	if (Clockwork.Client.Wakeup) then
@@ -693,6 +719,10 @@ function Schema:RenderScreenspaceEffects()
 		
 		return;
 	end
+	
+	if (GetConVar("mat_hdr_level"):GetInt() != 2) then
+		RunConsoleCommand("mat_hdr_level", "2");
+	end
 
 	local curTime = CurTime();
 	local choosingCharacter = Clockwork.kernel:IsChoosingCharacter();
@@ -953,7 +983,7 @@ function Schema:AddBlackFade(time)
 end
 
 netstream.Hook("WakeupSequence", function(data)
-	if Clockwork.ConVars.WAKEUPSEQUENCE:GetInt() == 1 or !Clockwork.Client:IsAdmin() then
+	if Clockwork.ConVars.WAKEUPSEQUENCE:GetInt() == 1 then
 		Schema:RefreshWakeupSequence();
 		
 		Clockwork.Client.LoadingText = true;
@@ -1006,23 +1036,23 @@ function Schema:FinishWakeupSequence()
 	netstream.Start("FinishWakeup");
 end;
 
-Clockwork.datastream:Hook("Stunned", function(data)
+netstream.Hook("Stunned", function(data)
 	Schema:AddStunEffect(data);
 end);
 
-Clockwork.datastream:Hook("BlackStunned", function(data)
+netstream.Hook("BlackStunned", function(data)
 	Schema:AddBlackFade(data);
 end);
 
-Clockwork.datastream:Hook("MotionBlurStunned", function(data)
+netstream.Hook("MotionBlurStunned", function(data)
 	Schema:AddMotionBlurStunEffect(data, true);
 end);
 
-Clockwork.datastream:Hook("Flashed", function(data)
+netstream.Hook("Flashed", function(data)
 	Schema:AddFlashEffect();
 end);
 
-Clockwork.datastream:Hook("ClearEffects", function(data)
+netstream.Hook("ClearEffects", function(data)
 	Schema.stunEffects = {};
 	Schema.flashEffect = nil;
 	Schema.motionBlurStunEffect = nil;
@@ -1030,11 +1060,11 @@ Clockwork.datastream:Hook("ClearEffects", function(data)
 end);
 
 Clockwork.setting:AddCheckBox("Screen effects", "Enable cinematic film grain.", "cwFilmGrain", "Toggle the filmgrain overlay.", function() return Clockwork.player:IsAdmin(Clockwork.Client); end);
-Clockwork.setting:AddCheckBox("Screen effects", "Enable Calcview hook.", "cwShowCalcView", "Click to enable/disable the Calcview hook.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
-Clockwork.setting:AddCheckBox("Screen effects", "Enable cinematic camera.", "cwCinematicView", "Click to enable/disable cinematic camera smoothing.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
+Clockwork.setting:AddCheckBox("Screen effects", "Enable Calcview hook.", "cwShowCalcView", "Click to toggle the Calcview hook.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
+Clockwork.setting:AddCheckBox("Screen effects", "Enable cinematic camera.", "cwCinematicView", "Click to toggle cinematic camera smoothing.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
 Clockwork.setting:AddCheckBox("Screen effects", "Cinematic camera only in observer.", "cwCinematicViewObs", "Enables the cinematic camera only when you are in observer.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
 Clockwork.setting:AddCheckBox("Admin ESP", "Enable observer lamp light.", "cwObserverLamp", "Toggle the observer lamp light.", function() return Clockwork.player:IsAdmin(Clockwork.Client); end);
 
 --
-Clockwork.setting:AddCheckBox("Wakeup sequence", "Enable the wakeup sequence.", "cwWakeupSequence", "Click to enable/disable the wakeup sequence.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
-Clockwork.setting:AddCheckBox("Zones", "Enable motion blur.", "cwShowBlur", "Click to enable/disable motion blur.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);
+Clockwork.setting:AddCheckBox("Wakeup sequence", "Enable the wakeup sequence.", "cwWakeupSequence", "Click to toggle the wakeup sequence.");
+Clockwork.setting:AddCheckBox("Zones", "Enable motion blur.", "cwShowBlur", "Click to toggle motion blur.", function() return Clockwork.player:IsAdmin(Clockwork.Client) end);

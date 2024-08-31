@@ -18,6 +18,7 @@ ENT.OnDamageSounds = {"goat/idle1.wav"}
 ENT.ArmorPiercing = 10;
 ENT.SpawnHealth = 60
 ENT.XPValue = 25;
+ENT.MaxMultiHit = 1;
 
 -- Regen --
 
@@ -30,7 +31,7 @@ ENT.ReachEnemyRange = 30
 ENT.AvoidEnemyRange = 0
 
 -- Relationships --
-ENT.Factions = {"FACTION_GOAT","FACTION_FARMHERBIVORES","FACTION_BROWNBEAR"}
+ENT.Factions = {"FACTION_DEER","FACTION_FORESTHERBIVORES","FACTION_BROWNBEAR", "FACTION_SNOWLEOPARD"}
 
 -- Movements/animations --
 ENT.IdleAnimation = "idle"
@@ -108,6 +109,7 @@ end
 
   function ENT:OnParried()
     self.nextMeleeAttack = CurTime() + 2;
+	self:ResetSequence(ACT_IDLE);
   end
 
   function ENT:OnMeleeAttack(enemy)
@@ -136,7 +138,7 @@ end
         damage = 10,
         range = 40,
         delay = 1,
-        type = DMG_SLASH,
+        type = DMG_CLUB,
         viewpunch = Angle(20, math.random(-10, 10), 0),
       }, function(self, hit)
         force = Vector(500, 500, 500)

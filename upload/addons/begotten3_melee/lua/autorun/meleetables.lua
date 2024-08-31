@@ -248,6 +248,17 @@ AttackSoundTables.MetalJavelinMeleeAttackSoundTable = {
 	["drawsound"] = {"draw/skyrim_bow_draw.mp3"},
 };
 
+AttackSoundTables.WoodenDaggerAttackSoundTable = {
+	["primarysound"] = {"weapons/Pierce_01.wav", "weapons/Pierce_03.wav", "weapons/Pierce_05.wav"},
+	["althitbody"] = {"vo/k_lab/kl_fiddlesticks.wav"},
+	["hitbody"] = {"weapons/Pierce_02.wav", "weapons/Pierce_04.wav", "weapons/Pierce_06.wav", "weapons/Pierce_07.wav", "weapons/Pierce_08.wav", "weapons/Pierce_09.wav"},
+	["althitbody"] = {"vo/k_lab/kl_fiddlesticks.wav"},
+	["hitworld"] = {"weapons/wooden_to_wooden_01.wav", "weapons/wooden_to_wooden_02.wav", "weapons/wooden_to_wooden_03.wav", "weapons/wooden_to_wooden_04.wav"},
+	["criticalswing"] = {"meleesounds/swing-throw.wav.mp3"},
+	["parryswing"] = {"weapons/Medium_01.wav", "weapons/Medium_02.wav", "weapons/Medium_03.wav", "weapons/Medium_04.wav", "weapons/Medium_05.wav"},
+	["drawsound"] = {"weapons/knife/knife_draw_x.mp3"},
+};
+
 AttackSoundTables.MetalDaggerAttackSoundTable = {
 	["primarysound"] = {"weapons/Pierce_01.wav", "weapons/Pierce_03.wav", "weapons/Pierce_05.wav"},
 	["altsound"] = {"vo/k_lab/kl_fiddlesticks.wav"},
@@ -331,6 +342,7 @@ AddSoundTable("MediumMetalBluntAttackSoundTable", AttackSoundTables.MediumMetalB
 AddSoundTable("SmallMetalBluntAttackSoundTable", AttackSoundTables.SmallMetalBluntAttackSoundTable)
 AddSoundTable("MetalSpearAttackSoundTable", AttackSoundTables.MetalSpearAttackSoundTable)
 AddSoundTable("MetalJavelinMeleeAttackSoundTable", AttackSoundTables.MetalJavelinMeleeAttackSoundTable)
+AddSoundTable("WoodenDaggerAttackSoundTable", AttackSoundTables.WoodenDaggerAttackSoundTable)
 AddSoundTable("MetalDaggerAttackSoundTable", AttackSoundTables.MetalDaggerAttackSoundTable)
 AddSoundTable("MetalThrowingDaggerMeleeAttackSoundTable", AttackSoundTables.MetalThrowingDaggerMeleeAttackSoundTable)
 AddSoundTable("MetalClawsAttackSoundTable", AttackSoundTables.MetalClawsAttackSoundTable)
@@ -554,7 +566,7 @@ AttackTables.DefaultAttackTable = {
 
 -- Projectiles
 AttackTables.IronJavelinAttackTable = {
-	["primarydamage"] = 100,
+	["primarydamage"] = 90,
 	["dmgtype"] = DMG_VEHICLE,
 	["canaltattack"] = true,
 	["altattackdamagemodifier"] = 0.4,
@@ -565,8 +577,8 @@ AttackTables.IronJavelinAttackTable = {
 	["alttakeammo"] = 3,
 	["armorpiercing"] = 50,
 	["poisedamage"] = 50,
-	["stabilitydamage"] = 60,
-	["takeammo"] = 20,
+	["stabilitydamage"] = 50,
+	["takeammo"] = 25,
 	["delay"] = 0.9,
 	["striketime"] = 0.4,
 	["punchstrength"] = Angle(0,1,0),
@@ -613,17 +625,17 @@ AttackTables.ThrowingAxeAttackTable = {
 	["primarydamage"] = 70,
 	["dmgtype"] = DMG_SLASH,
 	["canaltattack"] = true,
-	["altattackdamagemodifier"] = 0.5,
+	["altattackdamagemodifier"] = 0.6,
 	["altattackpoisedamagemodifier"] = 0.1,
 	["altattackstabilitydamagemodifier"] = 0,
 	["altmeleearc"] = 35,
-	["altmeleerange"] = 650,
+	["altmeleerange"] = 625,
 	["alttakeammo"] = 3,
-	["armorpiercing"] = 30,
+	["armorpiercing"] = 35,
 	["poisedamage"] = 40,
 	["stabilitydamage"] = 40,
-	["takeammo"] = 12,
-	["delay"] = 0.95,
+	["takeammo"] = 10,
+	["delay"] = 0.9,
 	["striketime"] = 0.4,
 	["punchstrength"] = Angle(0,1,0),
 };
@@ -644,6 +656,24 @@ AttackTables.ThrowingDaggerAttackTable = {
 	["takeammo"] = 5,
 	["delay"] = 0.6,
 	["striketime"] = 0.2,
+	["punchstrength"] = Angle(0,1,0),
+};
+
+AttackTables.ThrowingStoneAttackTable = {
+	["primarydamage"] = 10,
+	["dmgtype"] = 128,
+	["canaltattack"] = true,
+	["altattackdamagemodifier"] = 1,
+	["altattackpoisedamagemodifier"] = 0.2,
+	["altmeleearc"] = 15,
+	["altmeleerange"] = 600,
+	["alttakeammo"] = 3,
+	["armorpiercing"] = 25,
+	["poisedamage"] = 30,
+	["stabilitydamage"] = 40,
+	["takeammo"] = 8,
+	["delay"] = 0.9,
+	["striketime"] = 0.4,
 	["punchstrength"] = Angle(0,1,0),
 };
 
@@ -1239,8 +1269,8 @@ AttackTables.SpathaAttackTable = {
 	["altattackdamagemodifier"] = 0.7,
 	["altattackpoisedamagemodifier"] = 0.3,
 	["altmeleearc"] = 15,
-	["armorpiercing"] = 20,
-	["altarmorpiercing"] = 35,
+	["armorpiercing"] = 22,
+	["altarmorpiercing"] = 33,
 	["poisedamage"] = 20,
 	["stabilitydamage"] = 0,
 	["takeammo"] = 5,
@@ -1444,7 +1474,7 @@ AttackTables.GoreFalchionAttackTable = {
 	["poisedamage"] = 18,
 	["stabilitydamage"] = 0,
 	["takeammo"] = 5,
-	["delay"] = 0.92,
+	["delay"] = 0.95,
 	["striketime"] = 0.35,
 	["meleearc"] = 35,
 	["meleerange"] = 805,
@@ -1700,10 +1730,10 @@ AttackTables.SkylightSwordAttackTable = {
 	["altmeleearc"] = 15,
 	["armorpiercing"] = 55,
 	["altarmorpiercing"] = 90,
-	["poisedamage"] = 30,
-	["stabilitydamage"] = 0,
+	["poisedamage"] = 55,
+	["stabilitydamage"] = 25,
 	["takeammo"] = 8,
-	["delay"] = 1.3,
+	["delay"] = 1.2,
 	["striketime"] = 0.6,
 	["meleearc"] = 55,
 	["meleerange"] = 1120,
@@ -1780,12 +1810,12 @@ AttackTables.BattleAxeAttackTable = {
 	["canaltattack"] = false,
 	["altattackdamagemodifier"] = nil,
 	["altattackpoisedamagemodifier"] = nil,
-	["armorpiercing"] = 40,
+	["armorpiercing"] = 35,
 	["altarmorpiercing"] = nil,
 	["poisedamage"] = 25,
 	["stabilitydamage"] = 0,
-	["takeammo"] = 5,
-	["delay"] = 1,
+	["takeammo"] = 6,
+	["delay"] = 1.05,
 	["striketime"] = 0.4,
 	["meleearc"] = 35,
 	["meleerange"] = 650,
@@ -1799,7 +1829,7 @@ AttackTables.GoreBattleAxeAttackTable = {
 	["canaltattack"] = false,
 	["altattackdamagemodifier"] = nil,
 	["altattackpoisedamagemodifier"] = nil,
-	["armorpiercing"] = 38,
+	["armorpiercing"] = 40,
 	["altarmorpiercing"] = nil,
 	["poisedamage"] = 25,
 	["stabilitydamage"] = 0,
@@ -1820,7 +1850,7 @@ AttackTables.ReaverBattleAxeAttackTable = {
 	["altattackpoisedamagemodifier"] = nil,
 	["armorpiercing"] = 45,
 	["altarmorpiercing"] = nil,
-	["poisedamage"] = 23,
+	["poisedamage"] = 25,
 	["stabilitydamage"] = 0,
 	["takeammo"] = 6,
 	["delay"] = 1.02,
@@ -1906,6 +1936,25 @@ AttackTables.MorningStarAttackTable = {
 	["striketime"] = 0.4,
 	["meleearc"] = 35,
 	["meleerange"] = 650,
+	["punchstrength"] = Angle(0,1,0),
+};
+
+AttackTables.BoneMaceAttackTable = {
+	["primarydamage"] = 9,
+	["dmgtype"] = 128,
+	["attacktype"] = "reg_swing",
+	["canaltattack"] = false,
+	["altattackdamagemodifier"] = nil,
+	["altattackpoisedamagemodifier"] = nil,
+	["armorpiercing"] = 50,
+	["altarmorpiercing"] = nil,
+	["poisedamage"] = 15,
+	["stabilitydamage"] = 25,
+	["takeammo"] = 2,
+	["delay"] = 0.8,
+	["striketime"] = 0.3,
+	["meleearc"] = 35,
+	["meleerange"] = 570,
 	["punchstrength"] = Angle(0,1,0),
 };
 
@@ -2065,7 +2114,7 @@ AttackTables.TireIronAttackTable = {
 };
 
 AttackTables.ScrapAxeAttackTable = {
-	["primarydamage"] = 30,
+	["primarydamage"] = 35,
 	["dmgtype"] = 4,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2116,7 +2165,7 @@ AttackTables.SavageClawsAttackTable = {
 	["poisedamage"] = 15,
 	["stabilitydamage"] = 0,
 	["takeammo"] = 4,
-	["delay"] = 0.6,
+	["delay"] = 0.65,
 	["striketime"] = 0.3,
 	["meleearc"] = 35,
 	["meleerange"] = 625,
@@ -2135,7 +2184,7 @@ AttackTables.SteelClawsAttackTable = {
 	["poisedamage"] = 15,
 	["stabilitydamage"] = 0,
 	["takeammo"] = 4,
-	["delay"] = 0.65,
+	["delay"] = 0.7,
 	["striketime"] = 0.3,
 	["meleearc"] = 35,
 	["meleerange"] = 630,
@@ -2145,7 +2194,7 @@ AttackTables.SteelClawsAttackTable = {
 -- Daggers
 
 AttackTables.IronDaggerAttackTable = {
-	["primarydamage"] = 10,
+	["primarydamage"] = 12,
 	["dmgtype"] = 16,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2163,8 +2212,27 @@ AttackTables.IronDaggerAttackTable = {
 	["punchstrength"] = Angle(0,1,0),
 };
 
+AttackTables.BoneDaggerAttackTable = {
+	["primarydamage"] = 10,
+	["dmgtype"] = 16,
+	["attacktype"] = "reg_swing",
+	["canaltattack"] = false,
+	["altattackdamagemodifier"] = nil,
+	["altattackpoisedamagemodifier"] = nil,
+	["armorpiercing"] = 23,
+	["altarmorpiercing"] = nil,
+	["poisedamage"] = 0,
+	["stabilitydamage"] = 0,
+	["takeammo"] = 2,
+	["delay"] = 0.65,
+	["striketime"] = 0.2,
+	["meleearc"] = 15,
+	["meleerange"] = 450,
+	["punchstrength"] = Angle(0,1,0),
+};
+
 AttackTables.GoreHuntingDaggerAttackTable = {
-	["primarydamage"] = 14,
+	["primarydamage"] = 15,
 	["dmgtype"] = 16,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2202,7 +2270,7 @@ AttackTables.QuickshankAttackTable = {
 };
 
 AttackTables.ParryingDaggerAttackTable = {
-	["primarydamage"] = 12,
+	["primarydamage"] = 13,
 	["dmgtype"] = 16,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2221,7 +2289,7 @@ AttackTables.ParryingDaggerAttackTable = {
 };
 
 AttackTables.KnightsbaneAttackTable = {
-	["primarydamage"] = 12,
+	["primarydamage"] = 14,
 	["dmgtype"] = 16,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2550,7 +2618,7 @@ AttackTables.WingedSpearAttackTable = {
 -- Scythes
 
 AttackTables.WarScytheAttackTable = {
-	["primarydamage"] = 75,
+	["primarydamage"] = 80,
 	["dmgtype"] = 4,
 	["attacktype"] = "polearm_swing",
 	["canaltattack"] = false,
@@ -2575,7 +2643,7 @@ AttackTables.GlaiveAttackTable = {
 	["canaltattack"] = false,
 	["altattackdamagemodifier"] = nil,
 	["altattackpoisedamagemodifier"] = nil,
-	["armorpiercing"] = 25,
+	["armorpiercing"] = 30,
 	["altarmorpiercing"] = nil,
 	["poisedamage"] = 15,
 	["stabilitydamage"] = 0,
@@ -2596,7 +2664,7 @@ AttackTables.GoreCleaverAttackTable = {
 	["canaltattack"] = false,
 	["altattackdamagemodifier"] = nil,
 	["altattackpoisedamagemodifier"] = nil,
-	["armorpiercing"] = 25,
+	["armorpiercing"] = 30,
 	["altarmorpiercing"] = nil,
 	["poisedamage"] = 30,
 	["stabilitydamage"] = 0,
@@ -2615,7 +2683,7 @@ AttackTables.GoreWarAxeAttackTable = {
 	["canaltattack"] = false,
 	["altattackdamagemodifier"] = nil,
 	["altattackpoisedamagemodifier"] = nil,
-	["armorpiercing"] = 32,
+	["armorpiercing"] = 35,
 	["altarmorpiercing"] = nil,
 	["poisedamage"] = 40,
 	["stabilitydamage"] = 0,
@@ -2658,7 +2726,7 @@ AttackTables.HaralderWarAxeAttackTable = {
 	["poisedamage"] = 40,
 	["stabilitydamage"] = 0,
 	["takeammo"] = 7,
-	["delay"] = 1.45,
+	["delay"] = 1.4,
 	["striketime"] = 0.65,
 	["meleearc"] = 45,
 	["meleerange"] = 900,
@@ -2685,7 +2753,7 @@ AttackTables.HeavyBattleAxeAttackTable = {
 };
 
 AttackTables.GoreFalxAttackTable = {
-	["primarydamage"] = 60,
+	["primarydamage"] = 55,
 	["dmgtype"] = 4,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2771,8 +2839,8 @@ AttackTables.WarClubAttackTable = {
 	["altattackpoisedamagemodifier"] = nil,
 	["armorpiercing"] = 70,
 	["altarmorpiercing"] = nil,
-	["poisedamage"] = 52,
-	["stabilitydamage"] = 52,
+	["poisedamage"] = 50,
+	["stabilitydamage"] = 50,
 	["takeammo"] = 10,
 	["delay"] = 1.7,
 	["striketime"] = 0.65,
@@ -2809,8 +2877,8 @@ AttackTables.SatanicMaulAttackTable = {
 	["altattackpoisedamagemodifier"] = nil,
 	["armorpiercing"] = 75,
 	["altarmorpiercing"] = nil,
-	["poisedamage"] = 60,
-	["stabilitydamage"] = 60,
+	["poisedamage"] = 62,
+	["stabilitydamage"] = 62,
 	["takeammo"] = 9,
 	["delay"] = 1.6,
 	["striketime"] = 0.65,
@@ -2915,7 +2983,7 @@ AttackTables.PickaxeAttackTable = {
 };
 
 AttackTables.EveningStarAttackTable = {
-	["primarydamage"] = 25,
+	["primarydamage"] = 30,
 	["dmgtype"] = 128,
 	["attacktype"] = "reg_swing",
 	["canaltattack"] = false,
@@ -2929,7 +2997,7 @@ AttackTables.EveningStarAttackTable = {
 	["delay"] = 1.35,
 	["striketime"] = 0.65,
 	["meleearc"] = 45,
-	["meleerange"] = 815,
+	["meleerange"] = 825,
 	["punchstrength"] = Angle(0,1,0),
 };
 
@@ -2963,8 +3031,8 @@ AttackTables.GrocklingStoneMaulAttackTable = {
 	["altattackpoisedamagemodifier"] = nil,
 	["armorpiercing"] = 70,
 	["altarmorpiercing"] = nil,
-	["poisedamage"] = 62,
-	["stabilitydamage"] = 62,
+	["poisedamage"] = 65,
+	["stabilitydamage"] = 65,
 	["takeammo"] = 11,
 	["delay"] = 2,
 	["striketime"] = 0.95,
@@ -2982,9 +3050,9 @@ AttackTables.GrocklingSacredStoneMaulAttackTable = {
 	["altattackpoisedamagemodifier"] = nil,
 	["armorpiercing"] = 75,
 	["altarmorpiercing"] = nil,
-	["poisedamage"] = 65,
-	["stabilitydamage"] = 65,
-	["takeammo"] = 11,
+	["poisedamage"] = 68,
+	["stabilitydamage"] = 68,
+	["takeammo"] = 12,
 	["delay"] = 2.1,
 	["striketime"] = 0.95,
 	["meleearc"] = 45,
@@ -3182,6 +3250,7 @@ AddTable("PilumAttackTable", AttackTables.PilumAttackTable)
 AddTable("TrainingJavelinAttackTable", AttackTables.TrainingJavelinAttackTable)
 AddTable("ThrowingAxeAttackTable", AttackTables.ThrowingAxeAttackTable)
 AddTable("ThrowingDaggerAttackTable", AttackTables.ThrowingDaggerAttackTable)
+AddTable("ThrowingStoneAttackTable", AttackTables.ThrowingStoneAttackTable)
 AddTable("IronBoltAttackTable", AttackTables.IronBoltAttackTable)
 AddTable("ScrapBoltAttackTable", AttackTables.ScrapBoltAttackTable)
 AddTable("ClaymoreAttackTable", AttackTables.ClaymoreAttackTable) 
@@ -3204,6 +3273,7 @@ AddTable("WarSpearAttackTable", AttackTables.WarSpearAttackTable)
 AddTable("SavageClawsAttackTable", AttackTables.SavageClawsAttackTable) 
 AddTable("SteelClawsAttackTable", AttackTables.SteelClawsAttackTable) 
 AddTable("IronDaggerAttackTable", AttackTables.IronDaggerAttackTable) 
+AddTable("BoneDaggerAttackTable", AttackTables.BoneDaggerAttackTable) 
 AddTable("HarpoonAttackTable", AttackTables.HarpoonAttackTable) 
 AddTable("IronSpearAttackTable", AttackTables.IronSpearAttackTable) 
 AddTable("IronShortSpearAttackTable", AttackTables.IronShortSpearAttackTable) 
@@ -3229,7 +3299,8 @@ AddTable("PolehammerAttackTable", AttackTables.PolehammerAttackTable)
 AddTable("IronRapierAttackTable", AttackTables.IronRapierAttackTable)    
 AddTable("ElegantEpeeAttackTable", AttackTables.ElegantEpeeAttackTable) 
 AddTable("FlangedMaceAttackTable", AttackTables.FlangedMaceAttackTable)       
-AddTable("MorningStarAttackTable", AttackTables.MorningStarAttackTable)      
+AddTable("MorningStarAttackTable", AttackTables.MorningStarAttackTable)  
+AddTable("BoneMaceAttackTable", AttackTables.BoneMaceAttackTable)          
 AddTable("GoreHuntingDaggerAttackTable", AttackTables.GoreHuntingDaggerAttackTable)
 AddTable("QuickshankAttackTable", AttackTables.QuickshankAttackTable)    
 AddTable("ParryingDaggerAttackTable", AttackTables.ParryingDaggerAttackTable)
@@ -3713,6 +3784,24 @@ BlockTables.IronDaggerBlockTable = {
 	["candeflect"] = true,
 };
 
+BlockTables.BoneDaggerBlockTable = {
+	["guardblockamount"] = 10,
+	["specialeffect"] = false,
+	["blockeffect"] = "GlassImpact",
+	["blockeffectforward"] = 30,
+	["blockeffectpos"] = (Vector(5, 0, 60)),
+	["blockcone"] = 135,
+	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
+	["partialbulletblock"] = false,
+	["poiseresistance"] = 0,
+	["raisespeed"] = 1.25,
+	["instantraise"] = true,
+	["parrydifficulty"] = 0.2,
+	["parrytakestamina"] = 5,
+	["canparry"] = true,
+	["candeflect"] = true,
+};
+
 BlockTables.HarpoonBlockTable = {
 	["guardblockamount"] = 10,
 	["specialeffect"] = false,
@@ -3722,7 +3811,7 @@ BlockTables.HarpoonBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 5,
+	["poiseresistance"] = 10,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -3740,7 +3829,7 @@ BlockTables.IronSpearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 8,
+	["poiseresistance"] = 15,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -3758,7 +3847,7 @@ BlockTables.VoltspearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 8,
+	["poiseresistance"] = 15,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -3776,7 +3865,7 @@ BlockTables.SatanicSpearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 10,
+	["poiseresistance"] = 15,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -3794,7 +3883,7 @@ BlockTables.ScrapSpearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 5,
+	["poiseresistance"] = 10,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -3812,7 +3901,7 @@ BlockTables.IronShortSpearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 5,
+	["poiseresistance"] = 10,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.25,
@@ -3830,7 +3919,7 @@ BlockTables.WingedSpearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 10,
+	["poiseresistance"] = 15,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -4766,7 +4855,7 @@ BlockTables.TrainingSpearBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 8,
+	["poiseresistance"] = 15,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -4784,7 +4873,7 @@ BlockTables.PitchforkBlockTable = {
 	["blockcone"] = 180,
 	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
 	["partialbulletblock"] = false,
-	["poiseresistance"] = 6,
+	["poiseresistance"] = 15,
 	["raisespeed"] = 1.25,
 	["instantraise"] = false,
 	["parrydifficulty"] = 0.2,
@@ -5389,6 +5478,24 @@ BlockTables.VoltprodBlockTable = {
 	["candeflect"] = true,
 };
 
+BlockTables.BoneMaceBlockTable = {
+	["guardblockamount"] = 10,
+	["specialeffect"] = false,
+	["blockeffect"] = "GlassImpact",
+	["blockeffectforward"] = 10,
+	["blockeffectpos"] = (Vector(0, 0, 60)),
+	["blockcone"] = 180,
+	["blockdamagetypes"] = {DMG_SLASH, DMG_CLUB, DMG_VEHICLE},
+	["partialbulletblock"] = false,
+	["poiseresistance"] = 8,
+	["raisespeed"] = 0.75,
+	["instantraise"] = false,
+	["parrydifficulty"] = 0.2,
+	["parrytakestamina"] = 15,
+	["canparry"] = true,
+	["candeflect"] = true,
+};
+
 BlockTables.TireIronBlockTable = {
 	["guardblockamount"] = 10,
 	["specialeffect"] = false,
@@ -5628,6 +5735,7 @@ AddTable("WarSpearBlockTable", BlockTables.WarSpearBlockTable)
 AddTable("SavageClawsBlockTable", BlockTables.SavageClawsBlockTable) 
 AddTable("SteelClawsBlockTable", BlockTables.SteelClawsBlockTable) 
 AddTable("IronDaggerBlockTable", BlockTables.IronDaggerBlockTable) 
+AddTable("BoneDaggerBlockTable", BlockTables.BoneDaggerBlockTable) 
 AddTable("HarpoonBlockTable", BlockTables.HarpoonBlockTable) 
 AddTable("IronSpearBlockTable", BlockTables.IronSpearBlockTable) 
 AddTable("VoltspearBlockTable", BlockTables.VoltspearBlockTable) 
@@ -5720,6 +5828,7 @@ AddTable("SkyfallenSwordBlockTable", BlockTables.SkyfallenSwordBlockTable)
 AddTable("FrozenFatherlandAxeBlockTable", BlockTables.FrozenFatherlandAxeBlockTable)
 AddTable("MaximusWrathBlockTable", BlockTables.MaximusWrathBlockTable)
 AddTable("VoltprodBlockTable", BlockTables.VoltprodBlockTable)
+AddTable("BoneMaceBlockTable", BlockTables.BoneMaceBlockTable)
 AddTable("TireIronBlockTable", BlockTables.TireIronBlockTable)
 AddTable("ScrapAxeBlockTable", BlockTables.ScrapAxeBlockTable)
 AddTable("SteelArmingSwordBlockTable", BlockTables.SteelArmingSwordBlockTable)
@@ -6669,23 +6778,18 @@ BlockTables.shieldunique1 = { -- Red Wolf Skinshield (Unique)
 	["candeflect"] = false,
 	["ironsights"] = {
 		["models/v_onehandedbegotten.mdl"] = {pos = Vector(4.519, -1.206, 1.72), ang = Vector(-4.926, -23.921, 0)},
-		["models/v_begottenknife.mdl"] = {pos = Vector(4.519, -1.206, 1.72), ang = Vector(-4.926, -23.921, 0)},
+		["models/v_begottenknife.mdl"] = {pos = Vector(4.5, -1.5, 1.72), ang = Vector(-4.926, -18.292, 5.627)},
 		["models/weapons/cstrike/c_knife_t.mdl"] = {pos = Vector(4.519, -1.206, 1.72), ang = Vector(-4.926, -23.921, 0)},
-	},
-	["ViewModelBoneMods"] = {
-		["models/v_begottenknife.mdl"] = {
-			["ValveBiped.Bip01_L_UpperArm"] = { scale = Vector(1, 1, 1), pos = Vector(6.852, -9.815, -3.149), angle = Angle(0, 0, 0) }
-		},
 	},
 	["VElements"] = {
 		["models/v_onehandedbegotten.mdl"] = {
 			["shield_red_wolf"] = { type = "Model", model = "models/begotten/weapons/uniquegoreshield.mdl", bone = "ValveBiped.Bip01_L_Hand", rel = "", pos = Vector(-10.91, 6.752, -4.676), angle = Angle(35, 73.636, 134.416), size = Vector(1, 1, 1), material = "", skin = 0, bodygroup = {} },
 		},
 		["models/v_begottenknife.mdl"] = {
-			["shield_red_wolf"] = { type = "Model", model = "models/begotten/weapons/uniquegoreshield.mdl", bone = "ValveBiped.Bip01_L_Hand", rel = "", pos = Vector(-10.91, 6.752, -4.676), angle = Angle(35, 73.636, 134.416), size = Vector(1, 1, 1), material = "", skin = 0, bodygroup = {} },
+			["shield_red_wolf"] = { type = "Model", model = "models/begotten/weapons/uniquegoreshield.mdl", bone = "ValveBiped.Bip01_L_Hand", rel = "", pos = Vector(-15, 12, 5), angle = Angle(0, 50, 176), size = Vector(1, 1, 1), material = "", skin = 0, bodygroup = {} },
 		},
 		["models/weapons/cstrike/c_knife_t.mdl"] = {
-			["shield_red_wolf"] = { type = "Model", model = "models/begotten/weapons/uniquegoreshield.mdl", bone = "ValveBiped.Bip01_L_Hand", rel = "", pos = Vector(-10.91, 6.752, -4.676), angle = Angle(35, 73.636, 134.416), size = Vector(1, 1, 1), material = "", skin = 0, bodygroup = {} },
+			["shield_red_wolf"] = { type = "Model", model = "models/begotten/weapons/uniquegoreshield.mdl", bone = "ValveBiped.Bip01_L_Hand", rel = "", pos = Vector(-3.458, 8.395, -2.47), angle = Angle(25.555, 58.888, 143.332), size = Vector(1, 1, 1), material = "", skin = 0, bodygroup = {} },
 		},
 	},
 	["WElements"] = {

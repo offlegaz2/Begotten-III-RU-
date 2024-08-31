@@ -5,14 +5,14 @@
 
 -- Called when Clockwork has loaded all of the entities.
 function cwItemSpawner:ClockworkInitPostEntity()
-	self:LoadItemSpawns()
-	--self:SetupContainers(); -- Potentially glitched.
+	self:LoadContainerSpawns();
+	self:LoadItemSpawns();
+	self:LoadSupercrateSpawns();
+	
+	if config.GetVal("loot_spawner_enabled") then
+		--self:SetupContainers(); -- Potentially glitched.
+	end
 end
-
--- Called just after data should be saved.
---[[function cwItemSpawner:PostSaveData()
-	self:SaveItemSpawns()
-end]]--
 
 -- Called every tick.
 function cwItemSpawner:Think()
@@ -21,6 +21,10 @@ function cwItemSpawner:Think()
 	if (!self.nextContainerCheck or self.nextContainerCheck < curTime) then
 		self.nextContainerCheck = curTime + 8;
 		
+		if config.GetVal("loot_spawner_enabled") ~= true then
+			return;
+		end
+			
 		if !self.ContainerLocations then
 			return;
 		end;
@@ -256,16 +260,12 @@ function cwItemSpawner:Think()
 				self.nextSuperCrate = curTime + math.random(self.SuperCrateCooldown.min, self.SuperCrateCooldown.max);
 			end
 		end
-		
-		local playerCount = _player.GetCount();
-		local players = _player.GetAll();
 
-		for i = 1, playerCount do
-			local v, k = players[i], i;
-			if v:IsAdmin() then
-				if v.itemContainerSpawnESP then
-					if self.Containers then
-						Clockwork.datastream:Start(v, "ItemContsESPInfo",  {self.Containers, self.SuperCrate});
+		if self.Containers then
+			for i, v in ipairs(_player.GetAll()) do
+				if v:IsAdmin() then
+					if v.itemContainerSpawnESP then
+						netstream.Heavy(v, "ItemContsESPInfo",  {self.Containers, self.SuperCrate});
 					end
 				end
 			end
@@ -275,8 +275,8 @@ function cwItemSpawner:Think()
 	if (!self.nextItemSpawn or self.nextItemSpawn < curTime) then
 		self.nextItemSpawn = curTime + 5;
 		
-		if not self.ItemsSpawned then
-			self.ItemsSpawned = {};
+		if config.GetVal("loot_spawner_enabled") ~= true then
+			return;
 		end
 		
 		if not self.nextSuperCrate then
@@ -352,7 +352,9 @@ end;
 -- Called just after a player spawns.
 function cwItemSpawner:PostPlayerSpawn(player, lightSpawn, changeClass, firstSpawn)
 	if (player:IsAdmin() or player:IsUserGroup("operator")) then
+		netstream.Heavy(player, "ContainerSpawnESPInfo", {self.ContainerLocations});
 		netstream.Heavy(player, "ItemSpawnESPInfo", {self.SpawnLocations});
+		netstream.Heavy(player, "SupercrateSpawnESPInfo", {self.SupercrateLocations});
 	end;
 end;
 
@@ -517,3 +519,40 @@ function cwItemSpawner:Breakdown(player, itemTable, toolItem)
 		toolItem:TakeCondition(math.random(1, 2));
 	end;
 end;
+
+-- Called when Clockwork config has changed.
+function cwItemSpawner:ClockworkConfigChanged(key, data, previousValue, newValue)
+	if key == "loot_spawner_enabled" and newValue == false then
+		for k, v in pairs (ents.FindByClass("cw_item")) do
+			if v.lifeTime then
+				v:Remove();
+			end
+		end;
+		
+		local containers = self.Containers;
+		
+		if containers then
+			for i = 1, #containers do
+				local containerTable = containers[i];
+				local container = containerTable.container;
+				
+				if IsValid(container) then
+					container:Remove();
+				end
+			end
+		end
+
+		for k, v in pairs(self.ContainerLocations) do
+			for i = 1, #v do
+				v[i].occupier = nil;
+			end
+		end
+		
+		self.Containers = {};
+		
+		if self.SuperCrate and IsValid(self.SuperCrate.supercrate) then
+			self.SuperCrate.supercrate:Remove();
+			self.SuperCrate = nil;
+		end
+	end
+end

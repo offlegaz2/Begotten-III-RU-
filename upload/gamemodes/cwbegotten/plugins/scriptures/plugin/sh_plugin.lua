@@ -40,17 +40,23 @@ local ITEM = Clockwork.item:New(nil, true)
 				
 				if !table.HasValue(booksRead, self.uniqueID) then
 					--if cwBeliefs and player:HasBelief("scribe") then
-						player:HandleXP(cwBeliefs.xpValues["read"]);
+						local readXP = cwBeliefs.xpValues["read"] or 50;
+						
+						if player:GetFaction() ~= "Wanderer" then
+							readXP = math.Round(readXP / 2);
+						end
+						
+						player:HandleXP(readXP);
 					--end
 					
 					table.insert(booksRead, self.uniqueID);
 					
 					player:SetCharacterData("BooksRead", booksRead);
-					Clockwork.datastream:Start(player, "UpdateBooksRead", booksRead);
+					netstream.Start(player, "UpdateBooksRead", booksRead);
 				end
 				
 				player:EmitSound("begotten/items/note_turn.wav")
-				Clockwork.datastream:Start(player, "OpenBook", self("uniqueID"))
+				netstream.Start(player, "OpenBook", self("uniqueID"))
 			else
 				Schema:EasyText(player, "chocolate", "You cannot decipher the glyphs in this scripture!");
 			end
@@ -86,7 +92,7 @@ local ITEM = Clockwork.item:New(nil, true)
 								table.insert(booksCopied, self.uniqueID);
 								
 								player:SetCharacterData("BooksCopied", booksCopied);
-								Clockwork.datastream:Start(player, "UpdateBooksCopied", booksCopied);
+								netstream.Start(player, "UpdateBooksCopied", booksCopied);
 							
 								if cwBeliefs then
 									player:HandleXP(cwBeliefs.xpValues["copy"]);
@@ -413,8 +419,8 @@ if (SERVER) then
 		local booksCopied = player:GetCharacterData("BooksCopied", {});
 		local booksRead = player:GetCharacterData("BooksRead", {});
 		
-		Clockwork.datastream:Start(player, "UpdateBooksCopied", booksCopied);
-		Clockwork.datastream:Start(player, "UpdateBooksRead", booksRead);
+		netstream.Start(player, "UpdateBooksCopied", booksCopied);
+		netstream.Start(player, "UpdateBooksRead", booksRead);
 	end
 end
 
@@ -569,7 +575,7 @@ if (CLIENT) then
 		Clockwork.Client.BookPanel:Remove()
 	end
 	
-	Clockwork.datastream:Hook("OpenBook", function(data)
+	netstream.Hook("OpenBook", function(data)
 		local itemTable = Clockwork.item:FindByID(data)
 
 		if (itemTable and itemTable.bookInformation) then
@@ -588,13 +594,13 @@ if (CLIENT) then
 		end
 	end)
 	
-	Clockwork.datastream:Hook("UpdateBooksRead", function(data)
+	netstream.Hook("UpdateBooksRead", function(data)
 		if data then
 			cwScriptures.booksRead = data;
 		end
 	end)
 	
-	Clockwork.datastream:Hook("UpdateBooksCopied", function(data)
+	netstream.Hook("UpdateBooksCopied", function(data)
 		if data then
 			cwScriptures.booksCopied = data;
 		end

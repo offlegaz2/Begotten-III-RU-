@@ -69,7 +69,7 @@ ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
 ITEM.bulletScale = 0.90; -- reduces bullet damage by 10%
 
 ITEM.components = {breakdownType = "meltdown", items = {"iron_chunks", "iron_chunks", "iron_chunks", "iron_chunks", "leather", "leather", "leather"}};
-ITEM.itemSpawnerInfo = {category = "Armor", rarity = 1500};
+ITEM.itemSpawnerInfo = {category = "Armor", rarity = 2500};
 
 -- Called when a replacement is needed for a player.
 function ITEM:GetReplacement(player)
@@ -130,7 +130,7 @@ ITEM.bulletScale = 0.75; -- reduces bullet damage by 25%
 ITEM.stabilityScale = 0.45; -- reduces stability damage by 55%
 
 ITEM.components = {breakdownType = "meltdown", items = {"steel_chunks", "steel_chunks", "steel_chunks", "iron_chunks", "iron_chunks", "leather", "cloth", "cloth"}};
-ITEM.itemSpawnerInfo = {category = "Armor", rarity = 5000};
+ITEM.itemSpawnerInfo = {category = "Armor", rarity = 6250};
 
 -- Called when a replacement is needed for a player.
 function ITEM:GetReplacement(player)
@@ -430,7 +430,7 @@ ITEM.slashScale = 0.90; -- reduces slash damage by 10%
 ITEM.stabilityScale = 0.85; -- reduces stability damage by 15%
 ITEM.bulletScale = 0.90; -- reduces bullet damage by 10%
 
-ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "leather", "leather", "cloth", "cloth", "cloth"}};
+ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "leather", "leather", "cloth", "cloth"}};
 
 -- Called when a replacement is needed for a player.
 function ITEM:GetReplacement(player)
@@ -486,7 +486,7 @@ ITEM.slashScale = 0.90; -- reduces slash damage by 10%
 ITEM.stabilityScale = 0.85; -- reduces stability damage by 15%
 ITEM.bulletScale = 0.90; -- reduces bullet damage by 10%
 
-ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "leather", "leather", "cloth", "cloth", "cloth"}};
+ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "leather", "leather", "cloth", "cloth"}};
 
 -- Called when a replacement is needed for a player.
 function ITEM:GetReplacement(player)
@@ -542,7 +542,7 @@ ITEM.slashScale = 0.90; -- reduces slash damage by 10%
 ITEM.stabilityScale = 0.85; -- reduces stability damage by 15%
 ITEM.bulletScale = 0.90; -- reduces bullet damage by 10%
 
-ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "leather", "leather", "leather", "cloth", "cloth"}};
+ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "leather", "leather", "cloth", "cloth"}};
 
 -- Called when a replacement is needed for a player.
 function ITEM:GetReplacement(player)
@@ -579,6 +579,7 @@ ITEM.weightclass = "Light";
 ITEM.description = "Leather robes worn by the Gatekeepers of Pope Adyssa.";
 ITEM.useSound = "npc/combine_soldier/zipline_clothing2.wav";
 ITEM.excludeFactions = {"Goreic Warrior"};
+ITEM.faction = "Pope Adyssa's Gatekeepers";
 
 ITEM.effectiveLimbs = {
 	[HITGROUP_GENERIC] = true,
@@ -634,6 +635,7 @@ ITEM.weightclass = "Light";
 ITEM.description = "Leather robes worn by the Gatekeepers of Pope Adyssa.";
 ITEM.useSound = "npc/combine_soldier/zipline_clothing2.wav";
 ITEM.excludeFactions = {"Goreic Warrior"};
+ITEM.faction = "Pope Adyssa's Gatekeepers";
 
 ITEM.effectiveLimbs = {
 	[HITGROUP_GENERIC] = true,
@@ -881,7 +883,7 @@ ITEM.stabilityScale = 0.85; -- reduces stability damage by 15%
 ITEM.bulletScale = 0.90; -- reduces bullet damage by 10%
 
 ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "iron_chunks", "leather", "leather", "cloth", "cloth", "cloth"}};
-ITEM.itemSpawnerInfo = {category = "Armor", rarity = 1000};
+ITEM.itemSpawnerInfo = {category = "Armor", rarity = 3000};
 
 -- Called when a replacement is needed for a player.
 function ITEM:GetReplacement(player)
@@ -1987,7 +1989,7 @@ function ITEM:OnPlayerUnequipped(player, extraData)
 		end
 		
 		if self.concealsFace == true then
-			player:SetSharedVar("faceConcealed", false);
+			player:SetNetVar("faceConcealed", false);
 		end
 	end
 end
@@ -2001,7 +2003,7 @@ function ITEM:OnTakeFromPlayer(player)
 		end
 
 		if self.concealsFace == true then
-			player:SetSharedVar("faceConcealed", false);
+			player:SetNetVar("faceConcealed", false);
 		end
 	end
 end
@@ -2109,7 +2111,7 @@ function ITEM:OnPlayerUnequipped(player, extraData)
 		end
 		
 		if self.concealsFace == true then
-			player:SetSharedVar("faceConcealed", false);
+			player:SetNetVar("faceConcealed", false);
 		end
 	end
 end
@@ -2123,7 +2125,7 @@ function ITEM:OnTakeFromPlayer(player)
 		end
 
 		if self.concealsFace == true then
-			player:SetSharedVar("faceConcealed", false);
+			player:SetNetVar("faceConcealed", false);
 		end
 	end
 end
@@ -2235,7 +2237,7 @@ function ITEM:OnPlayerUnequipped(player, extraData)
 		end
 		
 		if self.concealsFace == true then
-			player:SetSharedVar("faceConcealed", false);
+			player:SetNetVar("faceConcealed", false);
 		end
 	end
 end
@@ -2249,7 +2251,7 @@ function ITEM:OnTakeFromPlayer(player)
 		end
 		
 		if self.concealsFace == true then
-			player:SetSharedVar("faceConcealed", false);
+			player:SetNetVar("faceConcealed", false);
 		end
 	end
 end
@@ -2353,7 +2355,6 @@ ITEM.type = "leather";
 ITEM.description = "Created from the bones of countless victims, this armor signifies the depraved mentality of its wearer. The armor rattles as it moves, giving it a particularly terrifying presence. This armor is uniquely suited against blunt attacks.";
 ITEM.useSound = "npc/combine_soldier/zipline_clothing2.wav";
 ITEM.excludeFactions = {"Goreic Warrior"};
-ITEM.attributes = {"fear"};
 
 ITEM.effectiveLimbs = {
 	[HITGROUP_GENERIC] = true,
@@ -2398,6 +2399,66 @@ ITEM.walkSound = {
 	"armormovement/rattle7.mp3",
 	"armormovement/rattle8.mp3",
 	"armormovement/rattle9.mp3",
+};
+
+ITEM:Register();
+
+local ITEM = Clockwork.item:New("clothes_base");
+ITEM.name = "Gatekeeper Halfplate";
+ITEM.group = "gatekeepers/gatekeeperhalfplate";
+ITEM.model = "models/begotten/items/gatekeeperhalfplate.mdl"
+ITEM.iconoverride = "begotten/ui/itemicons/gatekeeperhalfplate.png"
+ITEM.category = "Armor"
+ITEM.conditionScale = 0.75
+ITEM.hitParticle = "MetalSpark";
+ITEM.protection = 48
+ITEM.type = "chainmail";
+ITEM.weight = 4;
+ITEM.weightclass = "Medium";
+ITEM.description = "A breastplate worn over Gambeson bearing the colors of the Holy Order of the Gatekeepers. A cheap but highly practical piece of armor.";
+ITEM.useSound = "armormovement/body-armor-b4.WAV.mp3";
+ITEM.excludeFactions = {"Goreic Warrior"};
+ITEM.faction = "Gatekeeper";
+
+ITEM.effectiveLimbs = {
+	[HITGROUP_GENERIC] = true,
+	[HITGROUP_CHEST] = true,
+	[HITGROUP_STOMACH] = true,
+	[HITGROUP_LEFTARM] = true,
+	[HITGROUP_RIGHTARM] = true,
+	[HITGROUP_LEFTLEG] = true,
+	[HITGROUP_RIGHTLEG] = true,
+	[HITGROUP_GEAR] = true
+}
+
+ITEM.damageTypeScales = {
+	[DMG_FALL] = -0.10, -- increases fall damage by 10%
+}
+
+ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
+ITEM.slashScale = 0.75; -- reduces slash damage by 25%
+ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
+ITEM.bulletScale = 0.90; -- reduces bullet damage by 10%
+
+ITEM.components = {breakdownType = "meltdown", items = {"iron_chunks", "iron_chunks", "iron_chunks", "iron_chunks", "cloth", "cloth", "cloth"}};
+
+-- Called when a replacement is needed for a player.
+function ITEM:GetReplacement(player)
+
+end;
+
+ITEM.runSound = {
+	"armormovement/body-hauberk-1.wav.mp3",
+	"armormovement/body-hauberk-2.wav.mp3",
+	"armormovement/body-hauberk-3.wav.mp3",
+	"armormovement/body-hauberk-4.wav.mp3",
+	"armormovement/body-hauberk-5.wav.mp3",
+};
+
+ITEM.walkSound = {
+	"armormovement/body-hauberk-b4.wav.mp3",
+	"armormovement/body-hauberk-b5.wav.mp3",
 };
 
 ITEM:Register();

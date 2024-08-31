@@ -12,6 +12,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.excludeFactions = {"Goreic Warrior"};
 	ITEM.useSound = "armor/plate_damage_02.wav";
 	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
+	ITEM.faction = "Gatekeeper";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
 
@@ -43,7 +44,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "armor/plate_damage_02.wav";
 	ITEM.overlay = "begotten/zomboverlay/skullhelm";
 	
-	ITEM.attributes = {"conditionless", "not_unequippable", "deathknell"};
+	ITEM.attributes = {"conditionless", "not_unequippable", "deathknell", "fear"};
 	ITEM.requiredbeliefs = {"repentant"};
 	ITEM.kinisgerOverride = true;
 
@@ -84,7 +85,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "armor/plate_damage_02.wav";
 	ITEM.overlay = "begotten/zomboverlay/skullhelm";
 	
-	ITEM.attributes = {"conditionless", "not_unequippable", "bloodtoll"};
+	ITEM.attributes = {"conditionless", "not_unequippable", "bloodtoll", "fear"};
 	ITEM.requiredbeliefs = {"repentant"};
 	ITEM.kinisgerOverride = true;
 
@@ -143,7 +144,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
 	
 	ITEM.components = {breakdownType = "meltdown", items = {"iron_chunks", "iron_chunks"}};
-	ITEM.itemSpawnerInfo = {category = "Helms", rarity = 1250};
+	ITEM.itemSpawnerInfo = {category = "Helms", rarity = 2000};
 ITEM:Register();
 
 local ITEM = Clockwork.item:New("bodygroup_base")
@@ -538,6 +539,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.excludeFactions = {"Goreic Warrior"};
 	ITEM.useSound = "armor/plate_damage_02.wav";
 	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
+	ITEM.faction = "Gatekeeper";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
 

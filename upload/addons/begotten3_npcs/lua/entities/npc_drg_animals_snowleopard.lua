@@ -9,7 +9,8 @@ ENT.RagdollOnDeath = false
 ENT.CollisionBounds = Vector(15, 15, 40)
 ENT.BloodColor = BLOOD_COLOR_RED
 ENT.Frightening = true
-ENT.SightRange = 1000
+ENT.SightFOV = 300
+ENT.SightRange = 1024
 
 -- Sounds --
 ENT.OnDamageSounds = {"leopard/attack.wav"}
@@ -19,7 +20,8 @@ ENT.OnDamageSounds = {"leopard/attack.wav"}
 ENT.ArmorPiercing = 55;
 ENT.SpawnHealth = 275;
 ENT.StaminaDamage = 50;
-ENT.XPValue = 100;
+ENT.XPValue = 75;
+ENT.MaxMultiHit = 1;
 
 -- Regen --
 
@@ -32,7 +34,7 @@ ENT.ReachEnemyRange = 60
 ENT.AvoidEnemyRange = 0
 
 -- Relationships --
-ENT.Factions = {"FACTION_SNOWLEOPARD"}
+ENT.Factions = {"FACTION_DEER","FACTION_FORESTHERBIVORES","FACTION_BROWNBEAR", "FACTION_SNOWLEOPARD"}
 
 -- Movements/animations --
 ENT.IdleAnimation = "idle"
@@ -121,6 +123,7 @@ self:SetCooldown("Leap", 8)
 self:SetVelocity(self:GetUp()*100)
 self:SetVelocity(self:GetForward()*600)
 self:Jump(100)
+self:EmitSound("leopard/idle1.wav", 80)
 end
 end
 
@@ -175,6 +178,7 @@ end
 
   function ENT:OnParried()
     self.nextMeleeAttack = CurTime() + 2;
+	self:ResetSequence(ACT_IDLE);
   end
 
   function ENT:OnMeleeAttack(enemy)

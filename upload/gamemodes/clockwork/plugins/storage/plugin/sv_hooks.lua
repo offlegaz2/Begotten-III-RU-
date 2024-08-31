@@ -57,10 +57,10 @@ function cwStorage:EntityHandleMenuOption(player, entity, option, arguments)
 							end;
 							
 							player.ActiveContainer = entity;
-							Clockwork.datastream:Start(player, "LockInteract", {entity.cwLockType, false, entity});
+							netstream.Start(player, "LockInteract", {entity.cwLockType, false, entity});
 						end;
 					else
-						Clockwork.datastream:Start(player, "ContainerPassword", entity);
+						netstream.Start(player, "ContainerPassword", entity);
 					end;
 				end;
 			end;
@@ -113,7 +113,7 @@ function cwStorage:EntityRemoved(entity)
 		local player = entity.LockpickingPlayer;
 
 		if player and IsValid(player) then
-			player.LockpickCooldown = CurTime() + 5;
+			player.LockpickCooldown = CurTime() + 1;
 			player:Freeze(false);
 			player.Lockpicking = nil;
 			player.ActiveContainer = nil;
@@ -152,7 +152,7 @@ function cwStorage:PlayerUseUnknownItemFunction(player, itemTable, itemFunction)
 				self:MakeKeyCopy(player, itemTable);
 			end);
 			
-			Clockwork.datastream:Start(player, "CloseMenu");
+			netstream.Start(player, "CloseMenu");
 		else
 			Schema:EasyText(player, "peru", "You cannot make a copy of this key!")
 		end;

@@ -10,7 +10,7 @@ function cwOxygen:PostPlayerSpawn(player, lightSpawn, changeClass, firstSpawn)
 			player:SetCharacterData("oxygen", 100);
 		end
 		
-		player:SetSharedVar("oxygen", player:GetCharacterData("oxygen"));
+		player:SetNetVar("oxygen", player:GetCharacterData("oxygen"));
 	end
 
 	player.suffocating = nil
@@ -52,7 +52,7 @@ function cwOxygen:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 			local newOxygen = math.Clamp(oxygen + change, 0, 100);
 			
 			player:SetCharacterData("oxygen", newOxygen);
-			player:SetSharedVar("oxygen", newOxygen);
+			player:SetNetVar("oxygen", newOxygen);
 		end
 		
 		if (!plyTab.suffocating) then
@@ -69,7 +69,7 @@ function cwOxygen:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 				decayTime = 1
 				
 				if (!plyTab.drowned and (curTime - plyTab.suffocating) > 10) then
-					Clockwork.datastream:Start(player, "Drown", true)
+					netstream.Start(player, "Drown", true)
 					plyTab.drowned = true
 					
 					timer.Simple(2, function()
@@ -83,7 +83,7 @@ function cwOxygen:PlayerThink(player, curTime, infoTable, alive, initialized, pl
 				
 				if (!plyTab.drowned) then
 					player:EmitSound("begotten/misc/npc_human_drowning_0"..math.random(1, 3)..".wav", 75, 100)
-					Clockwork.datastream:Start(player, "Drown")
+					netstream.Start(player, "Drown")
 				end
 			end
 		end
@@ -100,7 +100,7 @@ end
 
 -- Called every half second while a player is connected to the server.
 --[[function cwOxygen:OnePlayerHalfSecond(player)
-	player:SetSharedVar("oxygen", math.Round(player:GetCharacterData("oxygen", 100)))
+	player:SetNetVar("oxygen", math.Round(player:GetCharacterData("oxygen", 100)))
 end;]]--
 
 -- Called when the player's character data is saved.

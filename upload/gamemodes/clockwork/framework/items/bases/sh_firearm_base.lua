@@ -299,8 +299,8 @@ end;]]--
 function ITEM:OnUse(player, itemEntity)
 	local faction = player:GetFaction();
 	local subfaction = player:GetSubfaction();
-	local kinisgerOverride = player:GetSharedVar("kinisgerOverride");
-	local kinisgerOverrideSubfaction = player:GetSharedVar("kinisgerOverrideSubfaction");
+	local kinisgerOverride = player:GetNetVar("kinisgerOverride");
+	local kinisgerOverrideSubfaction = player:GetNetVar("kinisgerOverrideSubfaction");
 
 	if (table.HasValue(self.excludeFactions, kinisgerOverride or faction)) then
 		if !table.HasValue(self.includeSubfactions, kinisgerOverrideSubfaction or subfaction) then
@@ -367,7 +367,7 @@ function ITEM:OnEquip(player)
 		end
 	end
 	
-	Schema:EasyText(player, "peru", "You do not have an open slot to equip this shield in!")
+	Schema:EasyText(player, "peru", "You do not have an open slot to equip this weapon in!")
 	return false;
 end
 

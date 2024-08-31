@@ -1,4 +1,5 @@
 
+
 --[[-------------------------------------------------------------------
 	Roll Mod:
 		Dodge, duck, dip, dive and... roll!
@@ -115,7 +116,7 @@ function meta:CanRoll()
 	end
 	
 	if Clockwork then
-		if (self:GetSharedVar("tied", 0) ~= 0) then
+		if (self:GetNetVar("tied", 0) ~= 0) then
 			return false;
 		end
 	
@@ -123,16 +124,18 @@ function meta:CanRoll()
 			return false;
 		end
 		
-		if Clockwork.player:GetAction(self) ~= "" then
+		if Clockwork.player:GetAction(self) then
 			return false;
 		end
 		
 		if cwMedicalSystem then
 			local injuries = cwMedicalSystem:GetInjuries(self);
 			
-			for k, v in pairs (injuries) do
-				if v["broken_bone"] then
-					return false;
+			if injuries then
+				for k, v in pairs(injuries) do
+					if v["broken_bone"] then
+						return false;
+					end
 				end
 			end
 		end
@@ -179,12 +182,12 @@ function meta:StartRolling(a)
 	if Clockwork then
 		if self.GetCharacterData then
 			local stamina = self:GetCharacterData("Stamina");
-			local stamina_loss = 15;
+			local stamina_loss = 20;
 			
 			if time == 1 then
-				stamina_loss = 20;
-			elseif time == 1.1 then
 				stamina_loss = 25;
+			elseif time == 1.1 then
+				stamina_loss = 35;
 			end
 
 			if self.GetCharmEquipped and self:GetCharmEquipped("boot_contortionist") then
@@ -329,7 +332,6 @@ function meta:StartRolling(a)
 
 	timer.Create("RollRaiseTimer_"..self:EntIndex(), time * 0.8, 1, function()
 		if not IsValid( self ) then return end
-		if not self:Alive() then return end
 		
 		timer.Simple(0.25, function()
 			if IsValid(self) then
@@ -338,6 +340,8 @@ function meta:StartRolling(a)
 				end
 			end
 		end);
+		
+		if not self:Alive() then return end
 		
 		local curTime = CurTime();
 

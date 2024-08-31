@@ -17,7 +17,8 @@ ENT.OnDamageSounds = {"deer/idle1.wav"}
 -- Stats --
 ENT.ArmorPiercing = 5;
 ENT.SpawnHealth = 70
-ENT.XPValue = 40;
+ENT.XPValue = 35;
+ENT.MaxMultiHit = 1;
 
 -- Regen --
 
@@ -32,7 +33,7 @@ ENT.AvoidAfraidOfRange = 4000
 ENT.WatchAfraidOfRange = 3500
 
 -- Relationships --
-ENT.Factions = {"FACTION_DEER","FACTION_FORESTHERBIVORES","FACTION_BROWNBEAR"}
+ENT.Factions = {"FACTION_DEER","FACTION_FORESTHERBIVORES","FACTION_BROWNBEAR", "FACTION_SNOWLEOPARD"}
 
 -- Movements/animations --
 ENT.IdleAnimation = "idle"
@@ -107,6 +108,7 @@ end
 
   function ENT:OnParried()
     self.nextMeleeAttack = CurTime() + 2;
+	self:ResetSequence(ACT_IDLE);
   end
 
   function ENT:OnMeleeAttack(enemy)
@@ -147,7 +149,7 @@ end
         damage = 14,
         range = 60,
         delay = 0,
-        type = DMG_SLASH,
+        type = DMG_CLUB,
         viewpunch = Angle(20, math.random(-10, 10), 0),
       }, function(self, hit)
         if #hit > 0 then

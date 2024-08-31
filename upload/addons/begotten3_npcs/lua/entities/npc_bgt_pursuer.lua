@@ -39,6 +39,7 @@ ENT.ClimbUpAnimation = "climbloop"--ACT_ZOMBIE_CLIMB_UP --pull_grenade
 ENT.ClimbOffset = Vector(-14, 0, 0)
 ENT.ArmorPiercing = 30;
 ENT.Damage = 20;
+ENT.MaxMultiHit = 1;
 -- Detection --
 ENT.EyeBone = "ValveBiped.Bip01_Spine4"
 ENT.EyeOffset = Vector(7.5, 0, 5)
@@ -57,10 +58,25 @@ ENT.PossessionViews = {
 	}
 }
 ENT.PossessionBinds = {
+	[IN_JUMP] = {{
+		coroutine = true,
+		onkeydown = function(self)
+			if(!self:IsOnGround()) then return; end
+
+			self:LeaveGround();
+			self:SetVelocity(self:GetVelocity() + Vector(0,0,700) + self:GetForward() * 100);
+
+			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+
+		end
+
+	}},
+
 	[IN_ATTACK] = {{
 		coroutine = true,
 		onkeydown = function(self)
-			self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
+			if(self.nextMeleeAttack and self.nextMeleeAttack > CurTime()) then return; end
+						self:EmitSound("begotten/npc/grunt/attack_launch0"..math.random(1, 3)..".mp3", 100, self.pitch)
 			self:PlayActivityAndMove(ACT_MELEE_ATTACK1, 1, self.PossessionFaceForward)
 		end
 	}}
@@ -84,6 +100,21 @@ if SERVER then
 	end
 	function ENT:OnParried()
 		self.nextMeleeAttack = CurTime() + 2;
+		self:ResetSequence(ACT_IDLE);
+
+		local rand = math.random(1,3);
+		local direction = (rand == 1 and self:GetRight() or rand == 2 and (self:GetRight() * -1) or (self:GetForward() * -1));
+		local distance = math.random(200,250);
+
+		timer.Simple(0.1, function()
+			self:ResetSequence(ACT_WALK);
+			self:Jump(40);
+			self:SetVelocity(self:GetVelocity() + direction * distance);
+			self:EmitSound(self.OnDamageSounds[math.random(#self.OnDamageSounds)], 100, self.pitch + math.random(5,15));
+			self:EmitSound("Zombie.AttackMiss");
+
+		end);
+
 	end
 	-- Init/Think --
 	function ENT:CustomInitialize()
@@ -134,7 +165,7 @@ if SERVER then
 					ragdoll:Fire("fadeandremove", 1);
 					ragdoll:EmitSound("begotten/npc/burn.wav");
 					
-					if cwRituals and cwItemSpawner then
+					if cwRituals and cwItemSpawner and !hook.Run("GetShouldntThrallDropCatalyst", ragdoll) then
 						local randomItem;
 						local spawnable = cwItemSpawner:GetSpawnableItems(true);
 						local lootPool = {};

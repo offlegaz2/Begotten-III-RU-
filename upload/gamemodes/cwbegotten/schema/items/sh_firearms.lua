@@ -78,7 +78,6 @@ local ITEM = Clockwork.item:New("firearm_base");
 	ITEM.category = "Crossbows";
 	ITEM.model = "models/begotten/weapons/w_crossbow.mdl";
 	ITEM.weight = 3.5;
-	ITEM.uniqueID = "begotten_crossbow";
 	ITEM.description = "Commonly employed by poorly trained levies from the county districts, the crossbow is an ancient design long pre-dating the Empire of Light. It launches bolts at high speeds and features a locking mechanism so that a draw does not need to be maintained, though it still requires considerable strength to reload.";
 	ITEM.iconoverride = "materials/begotten/ui/itemicons/crossbow.png"
 	ITEM.isAttachment = true;
@@ -88,12 +87,36 @@ local ITEM = Clockwork.item:New("firearm_base");
 	
 	ITEM.ammoCapacity = 1;
 	ITEM.ammoTypes = {"Iron Bolt", "Scrap Bolt"};
+	ITEM.attributes = {"variable_damage"};
 	ITEM.firearmType = "Crossbow";
 	ITEM.reloadTime = 5; -- Seconds (for one round)
 	ITEM.reloadSounds = {"weapons/bulkcannon/draw.wav", "weapons/crossbow/bow-pre1.wav.mp3", "weapons/crossbow/bowgun-stance.wav.mp3"};
 	
 	ITEM.components = {breakdownType = "breakdown", items = {"iron_chunks", "wood", "wood"}};
-	ITEM.itemSpawnerInfo = {category = "Firearms", rarity = 1000, bNoSupercrate = true};
+	ITEM.itemSpawnerInfo = {category = "Firearms", rarity = 1650, bNoSupercrate = true};
+ITEM:Register();
+
+local ITEM = Clockwork.item:New("firearm_base");
+	ITEM.name = "Scrap Crossbow";
+	ITEM.uniqueID = "begotten_scrapbow";
+	ITEM.category = "Crossbows";
+	ITEM.model = "models/begotten/weapons/w_scrapbow.mdl";
+	ITEM.weight = 4;
+	ITEM.description = "A crossbow constructed from scrap metal and rotting wood.";
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/scrapbow.png"
+	ITEM.isAttachment = true;
+	ITEM.attachmentBone = "ValveBiped.Bip01_Spine2";
+	ITEM.attachmentOffsetAngles = Angle(90, 354.15, 0);
+	ITEM.attachmentOffsetVector = Vector(-3.23, 1.39, -6.36);
+	
+	ITEM.ammoCapacity = 1;
+	ITEM.ammoTypes = {"Iron Bolt", "Scrap Bolt"};
+	ITEM.attributes = {"variable_damage"};
+	ITEM.firearmType = "Crossbow";
+	ITEM.reloadTime = 8; -- Seconds (for one round)
+	ITEM.reloadSounds = {"weapons/bulkcannon/draw.wav", "weapons/crossbow/bow-pre1.wav.mp3", "weapons/crossbow/bowgun-stance.wav.mp3"};
+	
+	ITEM.components = {breakdownType = "breakdown", items = {"scrap", "scrap", "scrap", "wood"}};
 ITEM:Register();
 
 local ITEM = Clockwork.item:New("firearm_base");
@@ -314,8 +337,6 @@ ITEM = Clockwork.item:New("firearm_base");
 	ITEM.attachmentBone = "ValveBiped.Bip01_Spine2";
 	ITEM.attachmentOffsetAngles = Angle(0, 343.09, 90);
 	ITEM.attachmentOffsetVector = Vector(3.54, 3.54, -9.9);
-	--ITEM.loweredOrigin = Vector(-1.41, -6.031, -0.801);
-	--ITEM.loweredAngles = Angle(-19.698, 42.915, -51.357);
 	
 	ITEM.ammoCapacity = 1;
 	ITEM.ammoTypes = {"Longshot", "Pop-a-Shot"};
@@ -324,7 +345,7 @@ ITEM = Clockwork.item:New("firearm_base");
 	ITEM.reloadSounds = {"oneuse_deploy.ogg"};
 	ITEM.requireFaith = {"Faith of the Dark"};
 	
-	ITEM.components = {breakdownType = "meltdown", items = {"wood", "steel_chunks", "steel_chunks"}};
+	ITEM.components = {breakdownType = "meltdown", items = {"wood", "steel_chunks", "steel_chunks", "steel_chunks"}};
 ITEM:Register();
 
 ITEM = Clockwork.item:New("firearm_base");
@@ -338,15 +359,13 @@ ITEM = Clockwork.item:New("firearm_base");
 	ITEM.attachmentBone = "ValveBiped.Bip01_Spine2";
 	ITEM.attachmentOffsetAngles = Angle(0, 343.09, 90);
 	ITEM.attachmentOffsetVector = Vector(3.54, 3.54, -9.9);
-	--ITEM.loweredOrigin = Vector(-1.41, -6.031, -0.801);
-	--ITEM.loweredAngles = Angle(-19.698, 42.915, -51.357);
 	
 	ITEM.ammoCapacity = 1;
 	ITEM.ammoTypes = {"Longshot"};
 	ITEM.firearmType = "Long Gun";
-	ITEM.reloadTime = 10; -- Seconds
+	ITEM.reloadTime = 9; -- Seconds
 	ITEM.reloadSounds = {"oneuse_deploy.ogg", "musket/reload_musket08.wav", "musket/reload_musket_cock.wav"};
 	ITEM.requireFaith = {"Faith of the Dark"};
 	
-	ITEM.components = {breakdownType = "meltdown", items = {"wood", "fine_steel_chunks", "steel_chunks", "steel_chunks"}};
+	ITEM.components = {breakdownType = "meltdown", items = {"wood", "fine_steel_chunks", "steel_chunks", "steel_chunks", "steel_chunks"}};
 ITEM:Register();

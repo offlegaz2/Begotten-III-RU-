@@ -35,35 +35,37 @@ function cwMelee:DoMeleeHitEffects(entity, attacker, inflictor, position, origin
 			local entWeapon = entity:GetActiveWeapon();
 			
 			if IsValid(entWeapon) and (entWeapon.Base == "begotten_firearm_base" or entWeapon.isJavelin) and !entity:GetNWBool("Guardening") then
-				local dropMessages = {" goes flying out of their hand!", " is knocked out of their hand!"};
-				local itemTable = Clockwork.item:GetByWeapon(entWeapon);
-				
-				if itemTable then
-					if entity.opponent then
-						if (itemTable:HasPlayerEquipped(entity)) then
-							itemTable:OnPlayerUnequipped(entity);
-							entity:RebuildInventory();
-							entity:SetWeaponRaised(false);
-						end
-						
-						Clockwork.chatBox:AddInTargetRadius(entity, "me", "'s "..itemTable.name..dropMessages[math.random(1, #dropMessages)], entity:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
-					else
-						local dropPos = entity:GetPos() + Vector(0, 0, 35) + entity:GetAngles():Forward() * 4;
-						local itemEntity = Clockwork.entity:CreateItem(entity, itemTable, dropPos);
-						
-						if (IsValid(itemEntity)) then
-							entity:TakeItem(itemTable);
-							entity:SelectWeapon("begotten_fists");
-							entity:StripWeapon(entWeapon:GetClass());
+				if !(entWeapon.isJavelin and cwBeliefs and entity:GetNWBool("ThrustStance") and entity:HasBelief("strength")) then
+					local dropMessages = {" goes flying out of their hand!", " is knocked out of their hand!"};
+					local itemTable = Clockwork.item:GetByWeapon(entWeapon);
+					
+					if itemTable then
+						if entity.opponent then
+							if (itemTable:HasPlayerEquipped(entity)) then
+								itemTable:OnPlayerUnequipped(entity);
+								entity:RebuildInventory();
+								entity:SetWeaponRaised(false);
+							end
 							
 							Clockwork.chatBox:AddInTargetRadius(entity, "me", "'s "..itemTable.name..dropMessages[math.random(1, #dropMessages)], entity:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
+						else
+							local dropPos = entity:GetPos() + Vector(0, 0, 35) + entity:GetAngles():Forward() * 4;
+							local itemEntity = Clockwork.entity:CreateItem(entity, itemTable, dropPos);
+							
+							if (IsValid(itemEntity)) then
+								entity:TakeItem(itemTable);
+								entity:SelectWeapon("begotten_fists");
+								entity:StripWeapon(entWeapon:GetClass());
+								
+								Clockwork.chatBox:AddInTargetRadius(entity, "me", "'s "..itemTable.name..dropMessages[math.random(1, #dropMessages)], entity:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
+							end
 						end
+					else
+						entity:SelectWeapon("begotten_fists");
+						entity:StripWeapon(entWeapon:GetClass());
+					
+						Clockwork.chatBox:AddInTargetRadius(entity, "me", "'s "..entWeapon.PrintName..dropMessages[math.random(1, #dropMessages)], entity:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
 					end
-				else
-					entity:SelectWeapon("begotten_fists");
-					entity:StripWeapon(entWeapon:GetClass());
-				
-					Clockwork.chatBox:AddInTargetRadius(entity, "me", "'s "..entWeapon.PrintName..dropMessages[math.random(1, #dropMessages)], entity:GetPos(), Clockwork.config:Get("talk_radius"):Get() * 2);
 				end
 			end
 		
@@ -584,7 +586,7 @@ function cwMelee:PlayerStabilityFallover(player, falloverTime, bNoBoogie, bNoTex
 		}
 		
 		local phrase = randomPhrases[math.random(1, #randomPhrases)];
-		local faction = (player:GetSharedVar("kinisgerOverride") or player:GetFaction())
+		local faction = (player:GetNetVar("kinisgerOverride") or player:GetFaction())
 		local pitch = 100;
 		
 		phrase = string.gsub(phrase, "#HIS", gender);
@@ -634,12 +636,6 @@ function cwMelee:PlayerStabilityFallover(player, falloverTime, bNoBoogie, bNoTex
 					player:EmitSound("voice/man1/man1_stun0"..math.random(1, 4)..".wav", 90, pitch)
 				else
 					player:EmitSound("voice/female2/female2_stun0"..math.random(1, 4)..".wav", 90, pitch)
-				end
-			elseif (faction == "Children of Satan") then
-				if (gender == "his") then
-					player:EmitSound("voice/man4/man4_stun0"..math.random(1, 4)..".wav", 90, pitch)
-				else
-					player:EmitSound("voice/female1/female1_stun0"..math.random(1, 4)..".wav", 90, pitch)
 				end
 			else
 				if (gender == "his") then
@@ -852,7 +848,7 @@ end
 -- Called when a player's pain sound should be played.
 function cwMelee:PlayerPlayPainSound(player, gender, damageInfo, hitGroup)
 	if player:Alive() and !Clockwork.player:HasFlags(player, "M") and player:WaterLevel() < 3 then
-		local faction = (player:GetSharedVar("kinisgerOverride") or player:GetFaction())
+		local faction = (player:GetNetVar("kinisgerOverride") or player:GetFaction())
 		local pitch = 100;
 		
 		if IsValid(player.possessor) then
@@ -894,14 +890,6 @@ function cwMelee:PlayerPlayPainSound(player, gender, damageInfo, hitGroup)
 					player:EmitSound("voice/female2/female2_pain0"..math.random(1, 6)..".wav", 90, pitch)
 					player.nextPainSound = CurTime()+0.5
 				end
-			elseif faction == "Children of Satan" then
-				if gender == "Male" then
-					player:EmitSound("voice/man4/man4_pain0"..math.random(1, 6)..".wav", 90, pitch)
-					player.nextPainSound = CurTime()+0.5
-				else
-					player:EmitSound("voice/female1/female1_pain0"..math.random(1, 6)..".wav", 90, pitch)
-					player.nextPainSound = CurTime()+0.5
-				end
 			else
 				if gender == "Male" then
 					player:EmitSound("voice/man3/man3_pain0"..math.random(1, 6)..".wav", 90, pitch)
@@ -921,7 +909,7 @@ function GM:PlayerPlayDeathSound(player, gender)
 		return;
 	end
 
-	local faction = (player:GetSharedVar("kinisgerOverride") or player:GetFaction())
+	local faction = (player:GetNetVar("kinisgerOverride") or player:GetFaction())
 	local pitch = 100;
 	
 	if IsValid(player.possessor) then
@@ -973,12 +961,6 @@ function GM:PlayerPlayDeathSound(player, gender)
 			else
 				player:EmitSound("voice/female2/female2_death0"..math.random(1, 9)..".wav", 90, pitch)
 			end
-		elseif faction == "Children of Satan" then
-			if gender == "Male" then
-				player:EmitSound("voice/man4/man4_death0"..math.random(1, 9)..".wav", 90, pitch)
-			else
-				player:EmitSound("voice/female1/female1_death0"..math.random(1, 9)..".wav", 90, pitch)
-			end
 		else
 			if gender == "Male" then
 				player:EmitSound("voice/man3/man3_death0"..math.random(1, 9)..".wav", 90, pitch)
@@ -989,7 +971,7 @@ function GM:PlayerPlayDeathSound(player, gender)
 	end
 end
 
-function cwMelee:PlayerEnteredDuel(player)
+function cwMelee:PostPlayerEnteredDuel(player)
 	if player.duelData then
 		for i, v in ipairs(player:GetWeaponsEquipped()) do
 			if v.category == "Throwables" then
@@ -1004,6 +986,12 @@ function cwMelee:PlayerEnteredDuel(player)
 end
 
 function cwMelee:PlayerExitedDuel(player)
+	for i, v in ipairs(player:GetWeaponsEquipped()) do
+		if v.category == "Throwables" then
+			player:Give(v.weaponClass or v.uniqueID);
+		end
+	end
+
 	if player.duelData then
 		player.duelData.javelins = nil;
 	end
