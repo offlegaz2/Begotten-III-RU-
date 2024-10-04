@@ -120,7 +120,7 @@ function cwItemSpawner:IsAreaClear(position, bContainer)
 		end;
 	--end;
 	
-	--[[local players = _player.GetAll();
+	--[[local players = PlayerCache or _player.GetAll();
 
 	for k, v in pairs(players) do
 		if (v:IsAdmin() or !v:Alive()) then
@@ -492,7 +492,7 @@ end;
 
 -- Eventually this should have its own high value loot table.
 function cwItemSpawner:SpawnSupercrate()
-	if !self.SupercrateLocations then
+	if !cwItemSpawner.SupercrateLocations or #cwItemSpawner.SupercrateLocations <= 0 then
 		return;
 	end
 	

@@ -104,7 +104,7 @@ local LIGHT = cwBeliefs.beliefTrees:New("light")
 			["fanaticism"] = {
 				name = "Fanaticism",
 				subfaith = "Sol Orthodoxy",
-				description = "Increases melee, stamina, and stability damage by a maximum of 40% (at 10% health) the lower your health is.",
+				description = "Increases melee, stamina, and stability damage by a maximum of 50% (at 10% health) the lower your health is.",
 				quote = "\"PURITY THROUGH PAIN! EXTINCTION THROUGH SACRIFICE! THE BELLS TOLL FOR ALL!\"",
 				lockedFactions = {"Pope Adyssa's Gatekeepers", "Holy Hierarchy"},
 				lockedSubfactions = {"Praeventor"},
@@ -130,7 +130,7 @@ local LIGHT = cwBeliefs.beliefTrees:New("light")
 			["emissary"] = {
 				name = "Emissary",
 				subfaith = "Hard-Glazed",
-				description = "Unlocks Tier III 'Faith of the Light' Rituals and unique Hard-Glazed Rituals. Also unlocks the ability to smelt Maximilian Steel (only if 'Master Blacksmith' is also unlocked).",
+				description = "Unlocks Tier III 'Faith of the Light' Rituals. Also unlocks the ability to smelt Maximilian Steel (only if 'Master Blacksmith' is also unlocked).",
 				requirements = {"hard_glazed", "disciple", "acolyte"},
 				row = 4,
 			},

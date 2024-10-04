@@ -211,6 +211,7 @@ function ITEM:OnPlayerUnequipped(player, extraData)
 							if player.equipmentSlots[mainSlot] then
 								if player.equipmentSlots[mainSlot].itemID == self.itemID then
 									if IsValid(weapon) and weapon:GetNWString("activeOffhand"):len() > 0 and weapon:GetNWString("activeOffhand") == v.uniqueID then
+										player.equipmentSlots[k] = nil; -- Infinite loop unless this line is here.
 										Clockwork.kernel:ForceUnequipItem(player, v.uniqueID, v.itemID);
 									
 										break;
@@ -236,7 +237,7 @@ function ITEM:OnPlayerUnequipped(player, extraData)
 		end
 		
 		if !isOffhand then
-			if IsValid(activeWeapon) and activeWeapon:GetClass() == self.weaponClass then
+			if activeWeapon:IsValid() and activeWeapon:GetClass() == self.weaponClass then
 				player:SelectWeapon("begotten_fists")
 			end
 			
@@ -301,7 +302,7 @@ function ITEM:OnPlayerUnequipped(player, extraData)
 				player:TakeItem(self)
 				
 				if !isOffhand then
-					if IsValid(activeWeapon) and activeWeapon:GetClass() == self.weaponClass then
+					if activeWeapon:IsValid() and activeWeapon:GetClass() == self.weaponClass then
 						player:SelectWeapon("begotten_fists")
 					end
 					

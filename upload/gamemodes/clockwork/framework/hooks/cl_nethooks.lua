@@ -122,9 +122,11 @@ netstream.Hook("PlaySound", function(data)
 	surface.PlaySound(data)
 end)
 
-netstream.Hook("RequestCountryCode", function(data)
-	netstream.Start("SendCountryCode", system.GetCountry());
-end);
+net.Receive("RequestCountryCode", function()
+	net.Start("SendCountryCode")
+		net.WriteString(system.GetCountry())
+	net.SendToServer()
+end)
 
 netstream.Hook("RadioState", function(data)
 	Clockwork.Client.radioState = data or false;
@@ -224,7 +226,7 @@ end)
 netstream.Hook("ReloadMenu", function(data)
 	local activeWeapon = Clockwork.Client:GetActiveWeapon();
 	
-	if !IsValid(activeWeapon) then return end;
+	if !activeWeapon:IsValid() then return end;
 	if activeWeapon.Base ~= "begotten_firearm_base" then return end;
 	
 	local weaponItem = item.GetByWeapon(activeWeapon);

@@ -97,7 +97,7 @@ local COMMAND = Clockwork.command:New("SpawnSupercrate")
 
 	-- Called when the command has been run.
 	function COMMAND:OnRun(player, arguments)
-		if !cwItemSpawner.SupercrateLocations then
+		if !cwItemSpawner.SupercrateLocations or #cwItemSpawner.SupercrateLocations <= 0 then
 			Schema:EasyText(player, "tomato", "This map does not support supercrates!");
 			
 			return;
@@ -157,7 +157,7 @@ local COMMAND = Clockwork.command:New("ItemSpawnerInfo")
 		if cwItemSpawner.SuperCrate then
 			message = message.."\nSupercrate currently exists!";
 		elseif cwItemSpawner.nextSuperCrate then
-			message = message.."\nSupercrate is on cooldown for "..tostring(math.Round(cwItemSpawner.nextSuperCrate - CurTime())).." more seconds!";
+			message = message.."\nSupercrate is on cooldown for "..tostring(math.ceil(cwItemSpawner.nextSuperCrate - CurTime())).." more seconds!";
 		end
 		
 		Schema:EasyText(player, "cornflowerblue", "["..self.name.."] "..message);
@@ -213,6 +213,6 @@ local COMMAND = Clockwork.command:New("RemoveItemSpawnerStorage");
 		cwItemSpawner.Containers = {};
 		cwItemSpawner.nextContainerCheck = CurTime() + 1;
 		
-		Schema:EasyText(GetAdmins(), "cornflowerblue", player:Name().." has cleared all item spawner containers!");
+		Schema:EasyText(Schema:GetAdmins(), "cornflowerblue", player:Name().." has cleared all item spawner containers!");
 	end;
 COMMAND:Register();

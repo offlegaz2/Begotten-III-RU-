@@ -720,12 +720,12 @@ end;
 do
 	-- A function to draw the date and time.
 	function Clockwork.kernel:DrawDateTime()
-		local colorWhite = Clockwork.option:GetColor("white");
+		--local colorWhite = Clockwork.option:GetColor("white");
 		local info = {width = ScrW() * 0.25, x = 8, y = 8};
 
 		hook.Run("HUDPaintTopScreen", info)
 		
-		if (hook.Run("PlayerCanSeeDateTime")) then
+		--[[if (hook.Run("PlayerCanSeeDateTime")) then
 			local dateTimeFont = Clockwork.option:GetFont("date_time_text");
 			local dateString = Clockwork.date:GetString();
 			local timeString = Clockwork.time:GetString();
@@ -743,7 +743,7 @@ do
 			end;
 			
 			info.y = info.y + 8;
-		end;
+		end;]]--
 
 		self:DrawBars(info);
 		hook.Run("PostDrawDateTime", info);
@@ -996,7 +996,7 @@ do
 				end
 
 				if (weapon and IsValid(weapon)) then			
-					local raised = player:IsWeaponRaised(weapon) or player:GetNWBool("senses") == true;
+					local raised = player:IsWeaponRaised(weapon);
 					local color = colorWhite;
 
 					if (raised == true) then
@@ -1020,9 +1020,7 @@ do
 
 	-- A function to get all ESP info.
 	function Clockwork.kernel:GetAdminESPInfo(info)
-		local players = _player.GetAll();
-		
-		for k, v in pairs(players) do
+		for _, v in _player.Iterator() do
 			if (IsValid(v) and v:HasInitialized()) then
 				local physBone = v:LookupBone("ValveBiped.Bip01_Head1");
 				local position = nil;
@@ -3170,9 +3168,9 @@ end
 
 -- A function to get a player's forced animation.
 function playerMeta:GetForcedAnimation()
-	local forcedAnimation = self:GetNetVar("ForceAnim")
+	local forcedAnimation = self:GetNetVar("ForceAnim");
 
-	if (forcedAnimation != 0) then
+	if (forcedAnimation) then
 		return {
 			animation = forcedAnimation,
 		}

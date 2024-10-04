@@ -154,7 +154,23 @@ local ITEM = Clockwork.item:New("shield_base");
 	ITEM.bulletConditionScale = 0.45;
 	
 	ITEM.itemSpawnerInfo = {category = "Melee", rarity = 750, bNoSupercrate = true};
-	ITEM.components = {breakdownType = "breakdown", items = {"wood", "wood", "wood", "wood", "leather", "leather", "leather"}};
+	ITEM.components = {breakdownType = "breakdown", items = {"wood", "wood", "wood", "leather", "leather"}};
+ITEM:Register();
+
+local ITEM = Clockwork.item:New("shield_base");
+	ITEM.name = "Old Soldier Shield";
+	ITEM.model = "models/begotten/thralls/skellyshield.mdl";
+	ITEM.weight = 2.5;
+	ITEM.uniqueID = "shield20";
+	ITEM.description = "Formerly used by the foot soldiers of the Empire of Light's armies, these shields now serve a more sinister purpose.";
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/old_soldier_shield.png"
+	ITEM.isAttachment = true;
+	ITEM.attachmentBone = "ValveBiped.Bip01_Spine2";
+	ITEM.attachmentOffsetAngles = Angle(90, 180, 0);
+	ITEM.attachmentOffsetVector = Vector(0, 2, 0);
+	ITEM.bulletConditionScale = 0.25;
+	
+	ITEM.components = {breakdownType = "meltdown", items = {"steel_chunks", "steel_chunks"}};
 ITEM:Register();
 
 local ITEM = Clockwork.item:New("shield_base");
@@ -329,7 +345,7 @@ local ITEM = Clockwork.item:New("shield_base");
 	ITEM.bulletConditionScale = 0.5;
 	
 	ITEM.itemSpawnerInfo = {category = "Melee", rarity = 600, bNoSupercrate = true};
-	ITEM.components = {breakdownType = "breakdown", items = {"wood", "wood", "wood", "wood"}};
+	ITEM.components = {breakdownType = "breakdown", items = {"wood", "wood", "wood"}};
 ITEM:Register();
 
 local ITEM = Clockwork.item:New("shield_base");

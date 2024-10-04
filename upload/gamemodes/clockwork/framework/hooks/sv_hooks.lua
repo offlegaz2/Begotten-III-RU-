@@ -7,6 +7,8 @@
 
 DEFINE_BASECLASS("gamemode_base")
 
+util.AddNetworkString("RequestCountryCode")
+
 --[[
 	@codebase Server
 	@details Called when the server has initialized.
@@ -86,31 +88,53 @@ function GM:Initialize()
 end
 
 function GM:OnePlayerSecond(player, curTime, infoTable)
-	--local weaponClass = Clockwork.player:GetWeaponClass(player)
-	--local color = player:GetColor()
-	local isDrunk = Clockwork.player:GetDrunk(player)
+	local plyTab = player:GetTable();
+	local drunkTab = plyTab.cwDrunkTab;
 
 	--player:HandleAttributeProgress(curTime)
 	--player:HandleAttributeBoosts(curTime)
 
-	player:SetDTString(STRING_FLAGS, player:GetFlags())
-	player:SetNetVar("Model", player:GetDefaultModel())
-	player:SetDTString(STRING_NAME, player:Name(true))
-	player:SetNetVar("Cash", player:GetCash())
-	player:SetNetVar("CustomColor", player:GetCharacterData("CustomColor"));
-
-	if (player.cwDrunkTab) then
-		for k, v in pairs(player.cwDrunkTab) do
-			if (curTime >= v) then
-				table.remove(player.cwDrunkTab, k)
-			end
-		end
+	local model = player:GetDefaultModel();
+	local flags = player:GetFlags();
+	local name = player:Name(true);
+	local cash = player:GetCash();
+	
+	if model ~= player:GetNetVar("Model") then
+		player:SetNetVar("Model", model);
+	end
+	
+	if flags ~= player:GetDTString(STRING_FLAGS) then
+		player:SetDTString(STRING_FLAGS, flags);
+	end
+	
+	if name ~= player:GetDTString(STRING_NAME) then
+		player:SetDTString(STRING_NAME, name);
+	end
+	
+	if cash ~= player:GetNetVar("Cash") then
+		player:SetLocalVar("Cash", cash);
+	end
+	
+	if player:GetCharacterData("CustomColor") then
+		player:SetNetVar("CustomColor", player:GetCharacterData("CustomColor"));
+	elseif player:GetNetVar("CustomColor") then
+		player:SetNetVar("CustomColor", nil);
 	end
 
-	if (isDrunk) then
-		player:SetNetVar("IsDrunk", isDrunk)
-	else
-		player:SetNetVar("IsDrunk", 0)
+	if (drunkTab) then
+		for k, v in pairs(drunkTab) do
+			if (curTime >= v) then
+				table.remove(drunkTab, k)
+			end
+		end
+		
+		if table.Count(drunkTab) > 0 then
+			player:SetLocalVar("IsDrunk", table.Count(drunkTab));
+		else
+			player:SetLocalVar("IsDrunk", nil);
+		end
+	elseif player:GetNetVar("IsDrunk") then
+		player:SetLocalVar("IsDrunk", nil);
 	end
 
 	--[[if (!config.GetVal("cash_enabled")) then
@@ -265,7 +289,7 @@ function GM:PlayerDisconnected(player)
 		Clockwork.kernel:PrintLog(LOGTYPE_MINOR, player:Name().." ("..player:SteamID().." / "..player:IPAddress()..") has disconnected.")
 		--Clockwork.chatBox:Add(nil, nil, "disconnect", player:SteamName().." has disconnected from the server.");
 		
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			if v:IsAdmin() then
 				Clockwork.chatBox:Add(v, nil, "disconnect", player:SteamName().." has disconnected from the server.");
 			end
@@ -569,7 +593,7 @@ function GM:PlayerSwitchFlashlight(player, bIsOn)
 	if hook.Run("PlayerCanRaiseWeapon", player, activeWeapon) ~= false then
 		if (!player.cwNextRaise or player.cwNextRaise < curTime) then
 			if (player:Alive() and !player:IsRagdolled()) then
-				if (IsValid(activeWeapon)) then
+				if (activeWeapon:IsValid()) then
 					if (Clockwork.kernel:IsDefaultWeapon(activeWeapon)) then
 						return false;
 					elseif (activeWeapon:GetClass() == "cw_flashlight") then
@@ -591,6 +615,7 @@ function GM:PlayerSwitchFlashlight(player, bIsOn)
 					player.cwNextRaise = curTime + (actionTime + 0.25);
 					
 					if (activeWeapon.InstantRaise) then
+						Clockwork.player:SetAction(player, false);
 						player:ToggleWeaponRaised();
 						return;
 					end;
@@ -665,7 +690,7 @@ end
 
 -- Called when Clockwork config has changed.
 function GM:ClockworkConfigChanged(key, data, previousValue, newValue)
-	local plyTable = _player.GetAll()
+	local plyTable = PlayerCache or _player.GetAll()
 
 	if (key == "default_flags") then
 		for k, v in ipairs(plyTable) do
@@ -1165,12 +1190,11 @@ end
 
 -- Called when the Clockwork data is saved.
 function GM:SaveData()
-	-- changed here
-	local players = _player.GetAll();
-	
-	for k, v in pairs(players) do
+	for _, v in _player.Iterator() do
 		if (v:HasInitialized()) then
-			v:SaveCharacter()
+			if hook.Run("CanSaveCharacter", v) ~= false then
+				v:SaveCharacter()
+			end
 		end
 	end;
 
@@ -1253,7 +1277,8 @@ function GM:BanExpired(steamID, ipAddress) end;
 -- Called when a player's data has loaded.
 function GM:PlayerDataLoaded(player)
 	player.CountryCodeRequested = true;
-	netstream.Start(player, "RequestCountryCode");
+	net.Start("RequestCountryCode")
+	net.Send(player)
 	if (player:IsBot()) then
 		local allcountries = Clockwork.kernel.countries;
 		local tab = {}
@@ -1279,7 +1304,7 @@ function GM:PlayerCountryAuthed(player, countryCode)
 		
 		Clockwork.kernel:PrintLog(LOGTYPE_MINOR, steamName.." ("..steamID.." / "..ipAddress..") has connected from "..countryName..".")
 		
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			if v:IsAdmin() then
 				Clockwork.chatBox:Add(v, nil, "connect_country", steamName.." has connected to the server from "..countryName..".", {countryIcon = string.upper(countryCode)});
 			end
@@ -1299,7 +1324,7 @@ concommand.Add("sexfunny", function(player)
 		
 		Clockwork.kernel:PrintLog(LOGTYPE_MINOR, steamName.." ("..steamID.." / "..ipAddress..") has connected from "..countryName..".")
 		
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			if v:IsAdmin() then
 				Clockwork.chatBox:Add(v, nil, "connect_country", steamName.." has connected to the server from "..countryName..".", {countryIcon = string.upper(countryCode)});
 			end
@@ -1505,7 +1530,10 @@ function GM:PlayerDataStreamInfoSent(player)
 			if (whitelisted) then
 				for k, v in pairs(whitelisted) do
 					if (Clockwork.faction:GetStored()[v]) then
-						netstream.Start(player, "SetWhitelisted", {v, true})
+						net.Start("SetWhitelisted")
+							net.WriteString(v)
+							net.WriteBool(true)
+						net.Send(player)
 					else
 						whitelisted[k] = nil
 					end
@@ -1514,7 +1542,10 @@ function GM:PlayerDataStreamInfoSent(player)
 			
 			if (whitelistedSubfactions) then
 				for k, v in pairs(whitelistedSubfactions) do
-					netstream.Start(player, "SetWhitelistedSubfaction", {v, true})
+					net.Start("SetWhitelistedSubfaction")
+						net.WriteString(v)
+						net.WriteBool(true)
+					net.Send(player)
 				end
 			end
 
@@ -1706,7 +1737,7 @@ do
 		local curTime = CurTime()
 
 		if (curTime >= cwNextThink) then
-			for i, player in ipairs(_player.GetAll()) do
+			for _, player in _player.Iterator() do
 				local initialized = player:HasInitialized();
 
 				if (initialized) then
@@ -1876,7 +1907,7 @@ function GM:PlayerCanUseCharacter(player, character)
 	local factionCount = 0
 	local rankCount = 0
 
-	for k, v in ipairs(_player.GetAll()) do
+	for _, v in _player.Iterator() do
 		if (v:HasInitialized()) then
 			if (v:GetFaction() == character.faction) then
 				if (player != v) then
@@ -3295,7 +3326,7 @@ function GM:PlayerCharacterCreated(player, character)
 	-- For some reason the character key wasn't being given.
 
 	timer.Simple(5, function()
-		if IsValid(player) and character then
+		if IsValid(player) and !player:IsBot() and character then
 			local charactersTable = config.Get("mysql_characters_table"):Get();
 			local schemaFolder = Clockwork.kernel:GetSchemaFolder()
 			local key_found = false;
@@ -3543,7 +3574,7 @@ end
 function GM:PostPlayerSpawn(player, lightSpawn, changeClass, firstSpawn)
 	local activeWeapon = player:GetActiveWeapon();
 	
-	if IsValid(activeWeapon) and activeWeapon:GetClass() == "begotten_fists" then
+	if activeWeapon:IsValid() and activeWeapon:GetClass() == "begotten_fists" then
 		if activeWeapon.OnDeploy then
 			activeWeapon:OnDeploy();
 		end
@@ -3652,7 +3683,7 @@ function GM:PlayerDeath(player, inflictor, attacker, damageInfo)
 		end
 		
 		player:SetCharacterData("Cash", 0, true);
-		player:SetNetVar("Cash", 0);]]--
+		player:SetLocalVar("Cash", 0);]]--
 		
 		if (IsValid(inflictor) and inflictor:GetClass() == "prop_combine_ball") then
 			if (damageInfo) then
@@ -3832,11 +3863,8 @@ function GM:ShowTeam(ply)
 									entity = entity,
 									owner = owner
 								}
-								
-								--changed here
-								local players = _player.GetAll();
-								
-								for k, v in pairs(players) do
+
+								for _, v in _player.Iterator() do
 									if (v != ply and v != owner) then
 										if (Clockwork.player:HasDoorAccess(v, entity, DOOR_ACCESS_COMPLETE)) then
 											data.accessList[v] = DOOR_ACCESS_COMPLETE
@@ -4001,7 +4029,7 @@ function GM:EntityTakeDamage(entity, damageInfo)
 			if IsValid(attacker) and attacker:IsPlayer() then
 				local activeWeapon = attacker:GetActiveWeapon();
 				
-				if IsValid(activeWeapon) and activeWeapon.Base == "sword_swepbase" then
+				if activeWeapon:IsValid() and activeWeapon.Base == "sword_swepbase" then
 					lastHitGroup = Clockwork.kernel:GetRagdollHitGroup(entity, damageInfo:GetDamagePosition());
 				end
 			end
@@ -4047,7 +4075,7 @@ function GM:EntityTakeDamage(entity, damageInfo)
 								else
 									local activeWeapon = attacker:GetActiveWeapon();
 									
-									if IsValid(activeWeapon) then
+									if activeWeapon:IsValid() then
 										if inflictor.GetPrintName then
 											inflictor = inflictor:GetPrintName();
 										end
@@ -4125,7 +4153,7 @@ function GM:EntityTakeDamage(entity, damageInfo)
 							else
 								local activeWeapon = attacker:GetActiveWeapon();
 								
-								if IsValid(activeWeapon) then
+								if activeWeapon:IsValid() then
 									if inflictor.GetPrintName then
 										inflictor = inflictor:GetPrintName();
 									end
@@ -4273,7 +4301,7 @@ function GM:PlayerSpawnedNPC(player, npc)
 	prevRelation = prevRelation or {}
 	prevRelation[player:SteamID()] = prevRelation[player:SteamID()] or {}
 
-	for k, v in ipairs(_player.GetAll()) do
+	for _, v in _player.Iterator() do
 		faction = Clockwork.faction:FindByID(v:GetFaction())
 
 		if (faction) then
@@ -4490,7 +4518,7 @@ function GM:RunModifyPlayerSpeed(player, infoTable, bIgnoreDelay)
 			player:SetRunSpeed(infoTable.runSpeed);
 		end;
 		
-		player.speedSetCooldown = curTime + 1;
+		player.speedSetCooldown = curTime + 0.1;
 	end;
 end
 

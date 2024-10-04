@@ -3,6 +3,18 @@
 	written by: cash wednesday, DETrooper, gabs and alyousha35.
 --]]
 
+local function IsAreaClear(position, radius, player)
+	for k, v in pairs (ents.FindInSphere(position, radius)) do
+		if v:IsPlayer() or v:IsNPC() or v:IsNextBot() then
+			if player and v == player then continue end;
+			
+			return false;
+		end
+	end
+	
+	return true;
+end
+
 local RITUAL = cwRituals.rituals:New("purifying_stone_rite");
 	RITUAL.name = "(T2) Purifying Stone Rite";
 	RITUAL.description = "Imbueing something with not only purity, but the ability to spread its purified nature to its surroundings is an act of faith practiced by few. Performing this ritual summons a Purifying Stone item. Removes 10 corruption.";
@@ -46,7 +58,7 @@ RITUAL = cwRituals.rituals:New("yellow_banner_of_quelling");
 		timer.Create("YellowBannerTimer_"..player:EntIndex(), 1800, 1, function()
 			if IsValid(player) then
 				if player:GetNetVar("yellowBanner", false) then
-					player:GetNetVar("yellowBanner", false);
+					player:SetNetVar("yellowBanner", false);
 
 					Clockwork.hint:Send(player, "The 'Yellow Banner of Quelling' ritual has worn off...", 10, Color(175, 100, 100), true, true);
 				end
@@ -391,21 +403,28 @@ RITUAL = cwRituals.rituals:New("aura_of_the_mother");
 
 	function RITUAL:OnPerformed(player)
 		player:SetNetVar("auraMotherActive", true);
+		
+		local auraMotherTick = 0;
 	
 		timer.Create("auraMotherTimer_"..player:EntIndex(), 5, 120, function() 
+			auraMotherTick = auraMotherTick + 1;
+			
 			if IsValid(player) then
+				local curTime = CurTime();
+			
 				for k, v in pairs (ents.FindInSphere(player:GetPos(), config.Get("talk_radius"):Get())) do
 					if (v:IsPlayer() and v:GetFaith() == "Faith of the Family") then
-						v:SetHealth(math.min(v:Health() + 6, v:GetMaxHealth()));
-						v:ModifyBloodLevel(150);
+						if !v.nextAuraMotherHeal or v.nextAuraMotherHeal <= curTime then
+							v:SetHealth(math.min(v:Health() + 6, v:GetMaxHealth()));
+							v:ModifyBloodLevel(25);
+							v.nextAuraMotherHeal = curTime + 4.9;
+						end
 					end
 				end
-			end
-		end);
-		
-		timer.Simple(600, function()
-			if IsValid(player) then
-				player:SetNetVar("auraMotherActive", false);
+				
+				if auraMotherTick == 120 then
+					player:SetNetVar("auraMotherActive", false);
+				end
 			end
 		end);
 	end;
@@ -527,7 +546,7 @@ RITUAL = cwRituals.rituals:New("call_of_the_blood_moon");
 				Clockwork.chatBox:Add(player, nil, "event", "You feel the Blood Moon's radiance pulsating, as though it were drawing power from something.");
 				netstream.Start(player, "PlaySound", "begotten/ui/sanity_touch.mp3");
 			
-				for i, v in ipairs(_player.GetAll()) do
+				for _, v in _player.Iterator() do
 					if IsValid(v) and v:HasInitialized() then
 						local lastZone = v:GetCharacterData("LastZone");
 
@@ -582,11 +601,11 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("call_of_the_blood_storm");
 	RITUAL.name = "(Unique) Call of the Blood Storm";
-	RITUAL.description = "For thousands of years the moon tribals and jungle jujus have danced around their fetish altars soaked in blood, singing for rains to cleanse them, which never came. Only those who kept dancing after their fires burnt out may feel the warm crimson droplet upon their cheek. Performing this ritual will summon a bloodstorm within a minute of being performed. Incurs 90 corruption.";
+	RITUAL.description = "For thousands of years the moon tribals and jungle jujus have danced around their fetish altars soaked in blood, singing for rains to cleanse them, which never came. Only those who kept dancing after their fires burnt out may feel the warm crimson droplet upon their cheek. Performing this ritual will summon a bloodstorm within a minute of being performed. Incurs 75 corruption.";
 	RITUAL.onerequiredbelief = {"thirst_blood_moon"}; -- Primevalist Unique Ritual
 	
 	RITUAL.requirements = {"tortured_spirit", "tortured_spirit", "tortured_spirit"};
-	RITUAL.corruptionCost = 90;
+	RITUAL.corruptionCost = 75;
 	RITUAL.ritualTime = 10;
 	RITUAL.experience = 200;
 	
@@ -632,7 +651,7 @@ RITUAL = cwRituals.rituals:New("call_to_darkness");
 	RITUAL.experience = 50;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Call to Darkness' ritual, meaning that an admin should probably possess them!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Call to Darkness' ritual, meaning that an admin should probably possess them!");
 	end;
 	function RITUAL:OnFail(player)
 	end;
@@ -741,7 +760,7 @@ RITUAL = cwRituals.rituals:New("demon_hunter");
 		
 		Schema:EasyText(player, "goldenrod", "You now have 25 minutes to kill "..player.thrallsToKill.." Begotten thralls for your reward.");
 		
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." just activated the 'Demon Hunter' ritual! Make sure there are enough thrall NPCs ("..player.thrallsToKill..") for him to kill!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." just activated the 'Demon Hunter' ritual! Make sure there are enough thrall NPCs ("..player.thrallsToKill..") for him to kill!");
 		if(math.random(1,10) == 1) then Schema:EasyText(GetAdmin(), "tomato", "The die have been cast...by random chance, an admin thrall has been requested to participate in this ritual!"); end
 
 		timer.Create("DemonHunterTimer_"..player:EntIndex(), 1500, 1, function()
@@ -776,7 +795,7 @@ RITUAL:Register()
 		player.thrallsToKill = math.random(1, 3);
 		
 		Schema:EasyText(player, "goldenrod", "You now have 25 minutes to kill "..player.thrallsToKill.." Begotten thralls for your reward.");
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." just activated the 'Infernal Incursion' ritual! Make sure there are enough thrall NPCs ("..player.thrallsToKill..") for him to kill!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." just activated the 'Infernal Incursion' ritual! Make sure there are enough thrall NPCs ("..player.thrallsToKill..") for him to kill!");
 		if(math.random(1,10) == 1) then Schema:EasyText(GetAdmin(), "tomato", "The die have been cast...by random chance, an admin thrall has been requested to participate in this ritual!"); end
 	end;
 	function RITUAL:OnFail(player)
@@ -927,7 +946,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("holy_powderkeg");
 	RITUAL.name = "(T2) Holy Powderkeg";
-	RITUAL.description = "Hand me your rifles, lend me your spent pepper-poppers and snapdragons! I will cock, load, pump and magazine every gun of every faithful Philimonjio in our Lord’s army as I was born and bred to do so! Performing this ritual significantly increases reload speed for the next 15 minutes. Incurs 5 corruption.";
+	RITUAL.description = "Hand me your rifles, lend me your spent pepper-poppers and snapdragons! I will cock, load, pump and magazine every gun of every faithful Philimonjio in our Lord’s army as I was born and bred to do so! Performing this ritual significantly increases reload speed for the next 30 minutes. Incurs 5 corruption.";
 	RITUAL.onerequiredbelief = {"flagellant", "acolyte"}; -- Tier II Faith of the Light Ritual
 	
 	RITUAL.requirements = {"holy_spirit", "light_catalyst", "trinity_catalyst"};
@@ -938,7 +957,7 @@ RITUAL = cwRituals.rituals:New("holy_powderkeg");
 	function RITUAL:OnPerformed(player)
 		player.holyPowderkegActive = true;
 
-		timer.Create("HolyPowderTimer_"..player:EntIndex(), 900, 1, function()
+		timer.Create("HolyPowderTimer_"..player:EntIndex(), 1800, 1, function()
 			if IsValid(player) then
 				if player.holyPowderkegActive then
 					player.holyPowderkegActive = nil;
@@ -968,7 +987,7 @@ RITUAL = cwRituals.rituals:New("cloak_of_the_black_hat");
 	function RITUAL:OnPerformed(player)
 		player:SetNetVar("kinisgerCloak", true);
 		
-		timer.Simple(1800, function()
+		timer.Create("KinisgerCloakTimer_"..player:EntIndex(), 1800, 1, function()
 			if IsValid(player) then
 				if player:GetNetVar("kinisgerCloak", false) then
 					player:SetNetVar("kinisgerCloak", false);
@@ -992,7 +1011,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("kinisger_appearance_alteration");
 	RITUAL.name = "(Unique) Kinisger Appearance Alteration";
-	RITUAL.description = "Members of House Kinisger are masters of infiltration, owing to their use of dark magic and their mutant blood in order to change apperances.";
+	RITUAL.description = "Members of House Kinisger are masters of infiltration, owing to their use of dark magic and their mutant blood in order to change apperances. Incurs 50 corruption.";
 	RITUAL.requiredSubfaction = {"Kinisger"}; -- Subfaction Ritual
 	
 	RITUAL.requirements = {"down_catalyst", "down_catalyst", "ice_catalyst"};
@@ -1095,9 +1114,9 @@ RITUAL = cwRituals.rituals:New("mark_of_the_devil");
 								target:SetNetVar("markedBySatanist", true);
 								
 								Schema:EasyText(player, "maroon", target:Name().." has been marked for death.");
-								Schema:EasyText(GetAdmins(), "tomato", target:Name().." has been marked for death by "..player:Name().."!");
+								Schema:EasyText(Schema:GetAdmins(), "tomato", target:Name().." has been marked for death by "..player:Name().."!");
 								
-								for k, v in pairs (_player.GetAll()) do
+								for _, v in _player.Iterator() do
 									if v:HasInitialized() then
 										if v == player or v:GetFaith() == "Faith of the Dark" then
 											Clockwork.chatBox:Add(v, nil, "darkwhispernoprefix", player:Name().." calls forth the minions of the Dark Lord, marking the one by the name of "..target:Name().." to be killed for their transgressions.");
@@ -1162,7 +1181,7 @@ RITUAL = cwRituals.rituals:New("mark_of_the_devil_target");
 								target:SetNetVar("markedBySatanist", true);
 								
 								Schema:EasyText(player, "maroon", target:Name().." has been marked for death.");
-								Schema:EasyText(GetAdmins(), "tomato", target:Name().." has been marked for death by "..player:Name().."!");
+								Schema:EasyText(Schema:GetAdmins(), "tomato", target:Name().." has been marked for death by "..player:Name().."!");
 								
 								if player:GetSubfaction() ~= "Rekh-khet-sa" then
 									player:HandleNeed("corruption", 30);
@@ -1327,7 +1346,7 @@ RITUAL = cwRituals.rituals:New("regrowth");
 		player:SetCharacterData("stability", max_stability);
 		--player:SetCharacterData("meleeStamina", max_poise);
 		--player:SetNWInt("meleeStamina", max_poise);
-		player:SetNWInt("freeze", 0);
+		player:SetLocalVar("freeze", 0);
 		player:SetBloodLevel(5000);
 		player:StopAllBleeding();
 		Clockwork.limb:HealBody(player, 100);
@@ -1403,7 +1422,7 @@ RITUAL = cwRituals.rituals:New("regrowth_target");
 					target:SetCharacterData("stability", max_stability);
 					--target:SetCharacterData("meleeStamina", max_poise);
 					--target:SetNWInt("meleeStamina", max_poise);
-					target:SetNWInt("freeze", 0);
+					target:SetLocalVar("freeze", 0);
 					target:SetBloodLevel(5000);
 					target:StopAllBleeding();
 					Clockwork.limb:HealBody(target, 100);
@@ -1506,7 +1525,7 @@ RITUAL = cwRituals.rituals:New("Sister's Blessing");
 	RITUAL.description = "The River Styx is said to be a boiling body of lava that is home to the dead and damned. With the correct blood magic ritual, the Reavers have been able to bargain with the demons that their crossing will be paid in the souls of their harvest. Incurs 75 corruption.";
 	RITUAL.onerequiredbelief = {"shedskin", "watchful_raven"}; -- Unique Mother/Sister Ritual
 
-	RITUAL.requirements = {"xolotl_catalyst", "pentagram_catalyst", "xolotl_catalyst"};
+	RITUAL.requirements = {"xolotl_catalyst", "pentagram_catalyst", "familial_catalyst"};
 	RITUAL.corruptionCost = 75;
 	RITUAL.ritualTime = 10;
 	RITUAL.experience = 200;
@@ -1556,7 +1575,7 @@ RITUAL = cwRituals.rituals:New("Sister's Blessing");
 		end
 
 		Schema:EasyText(player, "icon16/anchor.png", "cornflowerblue", "This ship can now navigate the River Styx!");
-		Schema:EasyText(GetAdmins(), "icon16/anchor.png", "goldenrod", player:Name() .. " has enchanted a boat to navigate the River Styx! You can perform the /ToggleHellSailing command to allow them to sail to the Hell Manor!")
+		Schema:EasyText(Schema:GetAdmins(), "icon16/anchor.png", "goldenrod", player:Name() .. " has enchanted a boat to navigate the River Styx! You can perform the /ToggleHellSailing command to allow them to sail to the Hell Manor!")
 		target.enchantment = true;
 		
 		return true;
@@ -1684,10 +1703,10 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("steel_will");
 	RITUAL.name = "(T3) Steel Will";
-	RITUAL.description = "Unbroken, undisturbed - the Glaze is with you! Performing this ritual restores your sanity to full, reduces sanity loss by 90%, and makes you immune to the effects of fear for 15 minutes. Incurs 10 corruption.";
+	RITUAL.description = "Unbroken, undisturbed - the Glaze is with you! Performing this ritual restores your sanity to full, reduces sanity loss by 90%, and makes you immune to the effects of fear for 40 minutes. Incurs 10 corruption.";
 	RITUAL.onerequiredbelief = {"emissary", "extinctionist"}; -- Tier III Faith of the Light Ritual
 	
-	RITUAL.requirements = {"xolotl_catalyst", "holy_spirit", "light_catalyst"};
+	RITUAL.requirements = {"light_catalyst", "elysian_catalyst", "light_catalyst"};
 	RITUAL.corruptionCost = 10;
 	RITUAL.ritualTime = 10;
 	RITUAL.experience = 50;
@@ -1696,7 +1715,7 @@ RITUAL = cwRituals.rituals:New("steel_will");
 		player:SetNetVar("steelWill", true);
 		player:HandleSanity(100);
 
-		timer.Create("SteelWillTimer_"..player:EntIndex(), 900, 1, function()
+		timer.Create("SteelWillTimer_"..player:EntIndex(), 2400, 1, function()
 			if IsValid(player) then
 				if player:GetNetVar("steelWill", false) then
 					player:SetNetVar("steelWill", false);
@@ -1751,7 +1770,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("summon_eddie");
 	RITUAL.name = "(T3) Summon Demon (Eddie)";
-	RITUAL.description = "Summon a Begotten Thrall that has become the host of a hell demon. It will be hostile towards anyone not of the Faith of the Dark. 10 second cast time. Incurs 15 corruption.";
+	RITUAL.description = "Summon a Begotten Thrall that has become the host of a hell demon. It will be hostile towards anyone not of the Faith of the Dark. 10 second cast time. Adds a 3 minute cooldown to all summons. Incurs 15 corruption.";
 	RITUAL.onerequiredbelief = {"sorcerer"}; -- Tier III Faith of the Dark Ritual
 	RITUAL.requiredBeliefsSubfactionOverride = {["Rekh-khet-sa"] = {"embrace_the_darkness"}}; -- Tier III Faith of the Dark Ritual
 	
@@ -1761,11 +1780,18 @@ RITUAL = cwRituals.rituals:New("summon_eddie");
 	RITUAL.experience = 35;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Summon Demon' ritual, spawning an Eddie near their position!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Summon Demon' ritual, spawning an Eddie near their position!");
+		
+		player.nextRitualSummon = CurTime() + 180;
 	end;
 	function RITUAL:OnFail(player)
 	end;
 	function RITUAL:StartRitual(player)
+		if player.nextRitualSummon and player.nextRitualSummon > CurTime() then
+			Schema:EasyText(player, "firebrick", "You cannot summon again for "..tostring(math.ceil(player.nextRitualSummon - CurTime())).." more seconds!");
+			return false;
+		end
+	
 		local lastZone = player:GetCharacterData("LastZone");
 		
 		if lastZone == "theater" or lastZone == "tower" then
@@ -1787,6 +1813,12 @@ RITUAL = cwRituals.rituals:New("summon_eddie");
 			
 			return false;
 		end;
+		
+		if !IsAreaClear(trace.HitPos, 32, player) then
+			Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+			
+			return false;
+		end
 	end;
 	function RITUAL:EndRitual(player)
 		local lastZone = player:GetCharacterData("LastZone");
@@ -1806,7 +1838,11 @@ RITUAL = cwRituals.rituals:New("summon_eddie");
 		local trace = player:GetEyeTraceNoCursor();
 		
 		if (trace.HitPos:Distance(player:GetShootPos()) <= 192) then
-			--Schema:EasyText(player, "maroon", "The ground opens up beneath you, and a creature of hell crawls out! What have you done?!");
+			if !IsAreaClear(trace.HitPos, 32, player) then
+				Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+				
+				return false;
+			end
 
 			local playerFaith = player:GetFaith();
 			
@@ -1828,7 +1864,7 @@ RITUAL = cwRituals.rituals:New("summon_eddie");
 					entity:AddEntityRelationship(player, D_LI, 99);
 					entity.summonedFaith = playerFaith;
 					
-					for k, v in pairs(_player.GetAll()) do
+					for _, v in _player.Iterator() do
 						if v:GetFaith() == playerFaith then
 							entity:AddEntityRelationship(v, D_LI, 99);
 						end
@@ -1840,7 +1876,9 @@ RITUAL = cwRituals.rituals:New("summon_eddie");
 					
 					table.insert(cwRituals.summonedNPCs, entity);
 					
-					Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					--Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					entity:SetPos(trace.HitPos + Vector(0, 0, 16));
+					
 					Clockwork.chatBox:AddInTargetRadius(player, "it", "There is a blinding flash of light and thunderous noise as an unholy creature of Hell suddenly appears!", trace.HitPos, config.Get("talk_radius"):Get() * 3);
 				end
 			end);
@@ -1854,7 +1892,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("summon_otis");
 	RITUAL.name = "(T3) Summon Demon (Otis)";
-	RITUAL.description = "Summon a strong chainsaw-wielding Begotten Thrall that has become the host of a hell demon. It will be hostile towards anyone not of the Faith of the Dark. 15 second cast time. Incurs 25 corruption.";
+	RITUAL.description = "Summon a strong chainsaw-wielding Begotten Thrall that has become the host of a hell demon. It will be hostile towards anyone not of the Faith of the Dark. 15 second cast time. Adds a 3 minute cooldown to all summons. Incurs 25 corruption.";
 	RITUAL.onerequiredbelief = {"sorcerer"}; -- Tier III Faith of the Dark Ritual
 	RITUAL.requiredBeliefsSubfactionOverride = {["Rekh-khet-sa"] = {"embrace_the_darkness"}}; -- Tier III Faith of the Dark Ritual
 	
@@ -1864,11 +1902,18 @@ RITUAL = cwRituals.rituals:New("summon_otis");
 	RITUAL.experience = 50;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Summon Demon' ritual, spawning an Otis near their position!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Summon Demon' ritual, spawning an Otis near their position!");
+		
+		player.nextRitualSummon = CurTime() + 180;
 	end;
 	function RITUAL:OnFail(player)
 	end;
 	function RITUAL:StartRitual(player)
+		if player.nextRitualSummon and player.nextRitualSummon > CurTime() then
+			Schema:EasyText(player, "firebrick", "You cannot summon again for "..tostring(math.ceil(player.nextRitualSummon - CurTime())).." more seconds!");
+			return false;
+		end
+	
 		local lastZone = player:GetCharacterData("LastZone");
 		
 		if lastZone == "theater" or lastZone == "tower" then
@@ -1890,6 +1935,12 @@ RITUAL = cwRituals.rituals:New("summon_otis");
 			
 			return false;
 		end;
+		
+		if !IsAreaClear(trace.HitPos, 32, player) then
+			Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+			
+			return false;
+		end
 	end;
 	function RITUAL:EndRitual(player)
 		local lastZone = player:GetCharacterData("LastZone");
@@ -1909,8 +1960,12 @@ RITUAL = cwRituals.rituals:New("summon_otis");
 		local trace = player:GetEyeTraceNoCursor();
 		
 		if (trace.HitPos:Distance(player:GetShootPos()) <= 192) then
-			--Schema:EasyText(player, "maroon", "The ground opens up beneath you, and a creature of hell crawls out! What have you done?!");
-
+			if !IsAreaClear(trace.HitPos, 32, player) then
+				Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+				
+				return false;
+			end
+			
 			local playerFaith = player:GetFaith();
 			
 			ParticleEffect("teleport_fx",trace.HitPos, Angle(0,0,0), nil)
@@ -1931,7 +1986,7 @@ RITUAL = cwRituals.rituals:New("summon_otis");
 					entity:AddEntityRelationship(player, D_LI, 99);
 					entity.summonedFaith = playerFaith;
 					
-					for k, v in pairs(_player.GetAll()) do
+					for _, v in _player.Iterator() do
 						if v:GetFaith() == playerFaith then
 							entity:AddEntityRelationship(v, D_LI, 99);
 						end
@@ -1943,7 +1998,9 @@ RITUAL = cwRituals.rituals:New("summon_otis");
 					
 					table.insert(cwRituals.summonedNPCs, entity);
 					
-					Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					--Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					entity:SetPos(trace.HitPos + Vector(0, 0, 16));
+					
 					Clockwork.chatBox:AddInTargetRadius(player, "it", "There is a blinding flash of light and thunderous noise as an unholy creature of Hell suddenly appears!", trace.HitPos, config.Get("talk_radius"):Get() * 3);
 				end
 			end);
@@ -1953,10 +2010,11 @@ RITUAL = cwRituals.rituals:New("summon_otis");
 			return false;
 		end;
 	end;
+RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("summon_sprinter");
 	RITUAL.name = "(T3) Summon Demon (Sprinters)";
-	RITUAL.description = "Summon two Begotten Sprinters that have been possessed by loyal demons. They will be hostile towards anyone not of the Faith of the Dark. May their patron deity save your enemies. 15 second cast time. Incurs 25 corruption.";
+	RITUAL.description = "Summon two Begotten Sprinters that have been possessed by loyal demons. They will be hostile towards anyone not of the Faith of the Dark. May their patron deity save your enemies. 15 second cast time. Adds a 3 minute cooldown to all summons. Incurs 25 corruption.";
 	RITUAL.onerequiredbelief = {"sorcerer"}; -- Tier III Faith of the Dark Ritual
 	RITUAL.requiredBeliefsSubfactionOverride = {["Rekh-khet-sa"] = {"embrace_the_darkness"}}; -- Tier III Faith of the Dark Ritual
 	
@@ -1966,11 +2024,18 @@ RITUAL = cwRituals.rituals:New("summon_sprinter");
 	RITUAL.experience = 50;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Summon Sprinter' ritual, spawning 2 sprinters near their position! God save their enemies.");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Summon Sprinter' ritual, spawning 2 sprinters near their position! God save their enemies.");
+		
+		player.nextRitualSummon = CurTime() + 180;
 	end;
 	function RITUAL:OnFail(player)
 	end;
 	function RITUAL:StartRitual(player)
+		if player.nextRitualSummon and player.nextRitualSummon > CurTime() then
+			Schema:EasyText(player, "firebrick", "You cannot summon again for "..tostring(math.ceil(player.nextRitualSummon - CurTime())).." more seconds!");
+			return false;
+		end
+		
 		local lastZone = player:GetCharacterData("LastZone");
 		
 		if lastZone == "gore_tree" or lastZone == "gore_hallway" or lastZone == "gore" or lastZone == "sea_rough" or lastZone == "sea_calm" or lastZone == "sea_styx" or lastZone == "gore_soil" then
@@ -1992,6 +2057,12 @@ RITUAL = cwRituals.rituals:New("summon_sprinter");
 			
 			return false;
 		end;
+		
+		if !IsAreaClear(trace.HitPos, 32, player) then
+			Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+			
+			return false;
+		end
 	end;
 	function RITUAL:EndRitual(player)
 		local lastZone = player:GetCharacterData("LastZone");
@@ -2013,7 +2084,11 @@ RITUAL = cwRituals.rituals:New("summon_sprinter");
 		local trace = player:GetEyeTraceNoCursor();
 		
 		if (trace.HitPos:Distance(player:GetShootPos()) <= 192) then
-			--Schema:EasyText(player, "maroon", "The ground opens up beneath you, and a creature of hell crawls out! What have you done?!");
+			if !IsAreaClear(trace.HitPos, 32, player) then
+				Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+				
+				return false;
+			end
 
 			local positions = {
 				["1"] = trace.HitPos + (player:GetRight() * 25),
@@ -2048,14 +2123,14 @@ RITUAL = cwRituals.rituals:New("summon_sprinter");
 					entity.RunAnimation = ACT_RUN;
 					entity.Summoned = true;
 
-					for k, v in pairs(_player.GetAll()) do
+					for _, v in _player.Iterator() do
 						if v:GetFaith() == playerFaith then
 							entity:AddEntityRelationship(v, D_LI, 99);
 						end
 					end
 
-					Clockwork.entity:MakeFlushToGround(entity, v + Vector(0, 0, 64), trace.HitNormal);
-
+					--Clockwork.entity:MakeFlushToGround(entity, v + Vector(0, 0, 64), trace.HitNormal);
+					entity:SetPos(v + Vector(0, 0, 16));
 				end
 					
 				Clockwork.chatBox:AddInTargetRadius(player, "it", "There is a blinding flash of light and thunderous noise as two unholy Sprinters of Hell summon into this plane! Oh fuck!", trace.HitPos, config.Get("talk_radius"):Get() * 3);
@@ -2071,7 +2146,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("summon_familiar_bear");
 	RITUAL.name = "(T3) Summon Familiar (Bear)";
-	RITUAL.description = "Summon a spirit bear from the Gore Forest so that it may do your bidding. It will be hostile towards anyone not of the Faith of the Family. 15 second cast time. Incurs 25 corruption.";
+	RITUAL.description = "Summon a spirit bear from the Gore Forest so that it may do your bidding. It will be hostile towards anyone not of the Faith of the Family. 15 second cast time. Adds a 3 minute cooldown to all summons. Incurs 25 corruption.";
 	RITUAL.onerequiredbelief = {"watchful_raven"}; -- Tier III Faith of the Family Ritual
 	
 	RITUAL.requirements = {"xolotl_catalyst", "familial_catalyst", "xolotl_catalyst"};
@@ -2080,11 +2155,18 @@ RITUAL = cwRituals.rituals:New("summon_familiar_bear");
 	RITUAL.experience = 50;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Summon Familiar' ritual, spawning a spirit bear near their position!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Summon Familiar' ritual, spawning a spirit bear near their position!");
+		
+		player.nextRitualSummon = CurTime() + 180;
 	end;
 	function RITUAL:OnFail(player)
 	end;
 	function RITUAL:StartRitual(player)
+		if player.nextRitualSummon and player.nextRitualSummon > CurTime() then
+			Schema:EasyText(player, "firebrick", "You cannot summon again for "..tostring(math.ceil(player.nextRitualSummon - CurTime())).." more seconds!");
+			return false;
+		end
+		
 		local lastZone = player:GetCharacterData("LastZone");
 		
 		if lastZone == "theater" or lastZone == "tower" then
@@ -2101,6 +2183,12 @@ RITUAL = cwRituals.rituals:New("summon_familiar_bear");
 			
 			return false;
 		end;
+		
+		if !IsAreaClear(trace.HitPos, 32, player) then
+			Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+			
+			return false;
+		end
 	end;
 	function RITUAL:EndRitual(player)
 		local lastZone = player:GetCharacterData("LastZone");
@@ -2115,6 +2203,12 @@ RITUAL = cwRituals.rituals:New("summon_familiar_bear");
 		local trace = player:GetEyeTraceNoCursor();
 		
 		if (trace.HitPos:Distance(player:GetShootPos()) <= 192) then
+			if !IsAreaClear(trace.HitPos, 32, player) then
+				Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+				
+				return false;
+			end
+			
 			local playerFaith = player:GetFaith();
 			
 			ParticleEffect("teleport_fx",trace.HitPos, Angle(0,0,0), nil)
@@ -2130,12 +2224,9 @@ RITUAL = cwRituals.rituals:New("summon_familiar_bear");
 					entity:SetMaterial("models/props_combine/portalball001_sheet")
 					entity:AddEntityRelationship(player, D_LI, 99);
 					entity.XPValue = 250;
-					
-					print(entity);
-					
 					entity.summonedFaith = playerFaith;
 					
-					for k, v in pairs(_player.GetAll()) do
+					for _, v in _player.Iterator() do
 						if v:GetFaith() == playerFaith then
 							entity:AddEntityRelationship(v, D_LI, 99);
 						else					
@@ -2152,12 +2243,10 @@ RITUAL = cwRituals.rituals:New("summon_familiar_bear");
 					end
 					
 					table.insert(cwRituals.summonedNPCs, entity);
+
+					--Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					entity:SetPos(trace.HitPos + Vector(0, 0, 16));
 					
-					print(entity:GetPos());
-					
-					Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
-					
-					print(entity:GetPos());
 					Clockwork.chatBox:AddInTargetRadius(player, "it", "There is a blinding flash of light and thunderous noise as a creature of the Gore Forest suddenly appears!", trace.HitPos, config.Get("talk_radius"):Get() * 3);
 				end
 			end);
@@ -2171,7 +2260,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("summon_familiar_leopard");
 	RITUAL.name = "(T3) Summon Familiar (Leopard)";
-	RITUAL.description = "Summon a spirit leopard from the Gore Forest so that it may do your bidding. It will be hostile towards anyone not of the Faith of the Family. 10 second cast time. Incurs 20 corruption.";
+	RITUAL.description = "Summon a spirit leopard from the Gore Forest so that it may do your bidding. It will be hostile towards anyone not of the Faith of the Family. 10 second cast time. Adds a 2 minute cooldown to all summons. Incurs 20 corruption.";
 	RITUAL.onerequiredbelief = {"watchful_raven"}; -- Tier III Faith of the Family Ritual
 	
 	RITUAL.requirements = {"xolotl_catalyst", "pantheistic_catalyst", "trinity_catalyst"};
@@ -2180,11 +2269,18 @@ RITUAL = cwRituals.rituals:New("summon_familiar_leopard");
 	RITUAL.experience = 50;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Summon Familiar' ritual, spawning a spirit leopard near their position!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Summon Familiar' ritual, spawning a spirit leopard near their position!");
+		
+		player.nextRitualSummon = CurTime() + 120;
 	end;
 	function RITUAL:OnFail(player)
 	end;
 	function RITUAL:StartRitual(player)
+		if player.nextRitualSummon and player.nextRitualSummon > CurTime() then
+			Schema:EasyText(player, "firebrick", "You cannot summon again for "..tostring(math.ceil(player.nextRitualSummon - CurTime())).." more seconds!");
+			return false;
+		end
+		
 		local lastZone = player:GetCharacterData("LastZone");
 		
 		if lastZone == "theater" or lastZone == "tower" then
@@ -2201,6 +2297,12 @@ RITUAL = cwRituals.rituals:New("summon_familiar_leopard");
 			
 			return false;
 		end;
+		
+		if !IsAreaClear(trace.HitPos, 32, player) then
+			Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+			
+			return false;
+		end
 	end;
 	function RITUAL:EndRitual(player)
 		local lastZone = player:GetCharacterData("LastZone");
@@ -2215,6 +2317,12 @@ RITUAL = cwRituals.rituals:New("summon_familiar_leopard");
 		local trace = player:GetEyeTraceNoCursor();
 		
 		if (trace.HitPos:Distance(player:GetShootPos()) <= 192) then
+			if !IsAreaClear(trace.HitPos, 32, player) then
+				Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+				
+				return false;
+			end
+		
 			local playerFaith = player:GetFaith();
 			
 			ParticleEffect("teleport_fx",trace.HitPos, Angle(0,0,0), nil)
@@ -2233,7 +2341,7 @@ RITUAL = cwRituals.rituals:New("summon_familiar_leopard");
 					
 					entity.summonedFaith = playerFaith;
 					
-					for k, v in pairs(_player.GetAll()) do
+					for _, v in _player.Iterator() do
 						if v:GetFaith() == playerFaith then
 							entity:AddEntityRelationship(v, D_LI, 99);
 						else					
@@ -2251,7 +2359,9 @@ RITUAL = cwRituals.rituals:New("summon_familiar_leopard");
 					
 					table.insert(cwRituals.summonedNPCs, entity);
 					
-					Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					--Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					entity:SetPos(trace.HitPos + Vector(0, 0, 16));
+					
 					Clockwork.chatBox:AddInTargetRadius(player, "it", "There is a blinding flash of light and thunderous noise as a creature of the Gore Forest suddenly appears!", trace.HitPos, config.Get("talk_radius"):Get() * 3);
 				end
 			end);
@@ -2265,7 +2375,7 @@ RITUAL:Register()
 
 RITUAL = cwRituals.rituals:New("summon_familiar_elk");
 	RITUAL.name = "(T3) Summon Familiar (Elk)";
-	RITUAL.description = "Summon a spirit elk from the Gore Forest so that it may do your bidding. It will be hostile towards anyone not of the Faith of the Family. 5 second cast time. Incurs 5 corruption.";
+	RITUAL.description = "Summon a spirit elk from the Gore Forest so that it may do your bidding. It will be hostile towards anyone not of the Faith of the Family. 5 second cast time. Adds a 1 minute cooldown to all summons. Incurs 5 corruption.";
 	RITUAL.onerequiredbelief = {"watchful_raven"}; -- Tier III Faith of the Family Ritual
 	
 	RITUAL.requirements = {"elysian_catalyst", "trinity_catalyst", "elysian_catalyst"};
@@ -2274,11 +2384,18 @@ RITUAL = cwRituals.rituals:New("summon_familiar_elk");
 	RITUAL.experience = 50;
 	
 	function RITUAL:OnPerformed(player)
-		Schema:EasyText(GetAdmins(), "tomato", player:Name().." has performed the 'Summon Familiar' ritual, spawning a spirit elk near their position!");
+		Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has performed the 'Summon Familiar' ritual, spawning a spirit elk near their position!");
+		
+		player.nextRitualSummon = CurTime() + 60;
 	end;
 	function RITUAL:OnFail(player)
 	end;
 	function RITUAL:StartRitual(player)
+		if player.nextRitualSummon and player.nextRitualSummon > CurTime() then
+			Schema:EasyText(player, "firebrick", "You cannot summon again for "..tostring(math.ceil(player.nextRitualSummon - CurTime())).." more seconds!");
+			return false;
+		end
+		
 		local lastZone = player:GetCharacterData("LastZone");
 		
 		if lastZone == "theater" or lastZone == "tower" then
@@ -2295,6 +2412,12 @@ RITUAL = cwRituals.rituals:New("summon_familiar_elk");
 			
 			return false;
 		end;
+		
+		if !IsAreaClear(trace.HitPos, 32, player) then
+			Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+			
+			return false;
+		end
 	end;
 	function RITUAL:EndRitual(player)
 		local lastZone = player:GetCharacterData("LastZone");
@@ -2309,6 +2432,12 @@ RITUAL = cwRituals.rituals:New("summon_familiar_elk");
 		local trace = player:GetEyeTraceNoCursor();
 		
 		if (trace.HitPos:Distance(player:GetShootPos()) <= 192) then
+			if !IsAreaClear(trace.HitPos, 32, player) then
+				Schema:EasyText(player, "firebrick", "The area you are trying to summon in is not clear!");
+				
+				return false;
+			end
+		
 			local playerFaith = player:GetFaith();
 			
 			ParticleEffect("teleport_fx",trace.HitPos, Angle(0,0,0), nil)
@@ -2327,7 +2456,7 @@ RITUAL = cwRituals.rituals:New("summon_familiar_elk");
 					
 					entity.summonedFaith = playerFaith;
 					
-					for k, v in pairs(_player.GetAll()) do
+					for _, v in _player.Iterator() do
 						if v:GetFaith() == playerFaith then
 							entity:AddEntityRelationship(v, D_LI, 99);
 						else					
@@ -2345,7 +2474,9 @@ RITUAL = cwRituals.rituals:New("summon_familiar_elk");
 					
 					table.insert(cwRituals.summonedNPCs, entity);
 					
-					Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					--Clockwork.entity:MakeFlushToGround(entity, trace.HitPos + Vector(0, 0, 64), trace.HitNormal);
+					entity:SetPos(trace.HitPos + Vector(0, 0, 16));
+					
 					Clockwork.chatBox:AddInTargetRadius(player, "it", "There is a blinding flash of light and thunderous noise as a creature of the Gore Forest suddenly appears!", trace.HitPos, config.Get("talk_radius"):Get() * 3);
 				end
 			end);

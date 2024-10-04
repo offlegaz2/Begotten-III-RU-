@@ -5,6 +5,12 @@
 	Other credits: kurozael, Alex Grist, Mr. Meow, zigbomb
 --]]
 
+util.AddNetworkString("SetWhitelisted")
+util.AddNetworkString("SetWhitelistedSubfaction")
+util.AddNetworkString("CharacterAdd")
+util.AddNetworkString("CharacterRemove")
+util.AddNetworkString("CharacterMenu")
+
 if (!Clockwork.player) then include("sh_player.lua") end
 if (!Clockwork.database) then include("sv_database.lua") end
 if (!Clockwork.chatBox) then include("sv_chatbox.lua") end
@@ -276,7 +282,9 @@ function Clockwork.player:CreateCharacterFromData(player, data)
 				if Schema.Ranks then
 					for k, v in pairs(Schema.Ranks) do
 						for i, v2 in ipairs(v) do
-							table.insert(blacklistedNames, string.utf8lower(v2));
+							if v2 ~= "" then
+								table.insert(blacklistedNames, string.utf8lower(v2));
+							end
 						end
 					end
 				end
@@ -286,7 +294,7 @@ function Clockwork.player:CreateCharacterFromData(player, data)
 				
 					if (string.find(forename, blacklistedName) or string.find(surname, blacklistedName)) then
 						if Schema.EasyText then
-							Schema:EasyText(GetAdmins(), "tomato", player:Name().." has attempted to make a character with the blacklisted phrase "..blacklistedName.."!");
+							Schema:EasyText(Schema:GetAdmins(), "tomato", player:Name().." has attempted to make a character with the blacklisted phrase "..blacklistedName.."!");
 						end
 					
 						return self:SetCreateFault(
@@ -637,7 +645,9 @@ end
 
 -- A function to set the player's character menu state.
 function Clockwork.player:SetCharacterMenuState(player, state)
-	netstream.Start(player, "CharacterMenu", state)
+	net.Start("CharacterMenu")
+		net.WriteUInt(state, 2)
+	net.Send(player)
 end
 
 -- A function to get a player's action.
@@ -665,7 +675,9 @@ function Clockwork.player:ExtendAction(player, extendTime)
 	if (startActionTime and CurTime() < startActionTime + actionDuration) then
 		player:SetNetVar("ActDuration", actionDuration + extendTime);
 		
-		timer.Adjust("Action"..player:UniqueID(), (CurTime() - startActionTime) + extendTime);
+		if timer.Exists("Action"..player:UniqueID()) then
+			timer.Adjust("Action"..player:UniqueID(), math.max(0, (startActionTime - CurTime()) + actionDuration + extendTime));
+		end
 		
 		hook.Run("ActionExtended", player, action);
 	end
@@ -959,7 +971,7 @@ function Clockwork.player:SetDrunk(player, expire)
 		player.cwDrunkTab[#player.cwDrunkTab + 1] = curTime + expire
 	end
 
-	player:SetNetVar("IsDrunk", self:GetDrunk(player) or 0)
+	player:SetLocalVar("IsDrunk", self:GetDrunk(player) or 0)
 end
 
 -- A function to strip a player's default ammo.
@@ -1007,9 +1019,11 @@ function Clockwork.player:SetWhitelisted(player, faction, isWhitelisted)
 		table.RemoveByValue(newTab, faction);
 	end
 
-	netstream.Start(
-		player, "SetWhitelisted", {faction, isWhitelisted}
-	)
+	net.Start("SetWhitelisted")
+		net.WriteString(faction)
+		net.WriteBool(isWhitelisted)
+	net.Send(player)
+
 	player:SetData("Whitelisted", newTab)
 end
 
@@ -1032,9 +1046,11 @@ function Clockwork.player:SetWhitelistedSubfaction(player, subfaction, isWhiteli
 		table.RemoveByValue(newTab, subfaction);
 	end
 
-	netstream.Start(
-		player, "SetWhitelistedSubfaction", {subfaction, isWhitelisted}
-	)
+	net.Start("SetWhitelistedSubfaction")
+		net.WriteString(subfaction)
+		net.WriteBool(isWhitelisted)
+	net.Send(player)
+	
 	player:SetData("WhitelistedSubfactions", newTab)
 end
 
@@ -1705,7 +1721,9 @@ function Clockwork.player:ForceDeleteCharacter(player, characterID)
 
 		player.cwCharacterList[characterID] = nil
 
-		netstream.Start(player, "CharacterRemove", characterID)
+		net.Start("CharacterRemove")
+			net.WriteUInt(characterID, 16)
+		net.Send(player)
 	end
 end
 
@@ -1869,12 +1887,7 @@ function Clockwork.player:RestoreRecognisedNames(player)
 	netstream.Start(player, "ClearRecognisedNames", true)
 
 	if (config.Get("save_recognised_names"):Get()) then
-		local playerCount = _player.GetCount();
-		local players = _player.GetAll();
-		
-		for i = 1, playerCount do
-			local v, k = players[i], i;
-			
+		for _, v in _player.Iterator() do
 			if (v:HasInitialized()) then
 				self:RestoreRecognisedName(player, v)
 				self:RestoreRecognisedName(v, player)
@@ -1955,12 +1968,7 @@ function Clockwork.player:ClearRecognisedNames(player, status, isAccurate)
 			netstream.Start(player, "ClearRecognisedNames", true)
 		end
 	else
-		local playerCount = _player.GetCount();
-		local players = _player.GetAll();
-		
-		for i = 1, playerCount do
-			local v, k = players[i], i;
-			
+		for _, v in _player.Iterator() do
 			if (v:HasInitialized()) then
 				if (self:DoesRecognise(player, v, status, isAccurate)) then
 					self:SetRecognises(player, v, false)
@@ -1974,12 +1982,7 @@ end
 
 -- A function to clear a player's name from being recognised.
 function Clockwork.player:ClearName(player, status, isAccurate)
-	local playerCount = _player.GetCount();
-	local players = _player.GetAll();
-	
-	for i = 1, playerCount do
-		local v, k = players[i], i;
-		
+	for _, v in _player.Iterator() do
 		if (v:HasInitialized()) then
 			if (!status or self:DoesRecognise(v, player, status, isAccurate)) then
 				self:SetRecognises(v, player, false)
@@ -2140,7 +2143,7 @@ function Clockwork.player:GiveCash(player, amount, reason, bNoMsg)
 		local cash = math.Round(math.max(player:GetCash() + roundedAmount, 0))
 
 		player:SetCharacterData("Cash", cash, true)
-		player:SetNetVar("Cash", cash)
+		player:SetLocalVar("Cash", cash)
 
 		if (roundedAmount < 0) then
 			roundedAmount = math.abs(roundedAmount)
@@ -2186,7 +2189,7 @@ end
 
 -- A function to show cinematic text to each player.
 function Clockwork.player:CinematicTextAll(text, color, hangTime)
-	for k, v in ipairs(_player.GetAll()) do
+	for _, v in _player.Iterator() do
 		if (v:HasInitialized()) then
 			self:CinematicText(v, text, color, hangTime)
 		end
@@ -2230,11 +2233,8 @@ end
 -- A function to notify each player in a radius.
 function Clockwork.player:NotifyInRadius(text, class, position, radius)
 	local listeners = {}
-	local playerCount = _player.GetCount();
-	local players = _player.GetAll();
-		
-	for i = 1, playerCount do
-		local v, k = players[i], i;
+
+	for _, v in _player.Iterator() do
 		if (v:HasInitialized()) then
 			if (position:DistToSqr(v:GetPos()) <= (radius * radius)) then
 				listeners[#listeners + 1] = v
@@ -2994,7 +2994,9 @@ function Clockwork.player:CharacterScreenAdd(player, character)
 	end
 
 	hook.Run("PlayerAdjustCharacterScreenInfo", player, character, info)
-	netstream.Start(player, "CharacterAdd", info)
+	net.Start("CharacterAdd")
+		net.WriteTable(info)
+	net.Send(player)
 end
 
 -- A function to convert a character's MySQL variables to Lua variables.

@@ -5,13 +5,17 @@
 	Other credits: kurozael, Alex Grist, Mr. Meow, zigbomb
 --]]
 
-netstream.Hook("SendCountryCode", function(player, data)
-	if (player.CountryCodeRequested) then
-		player.CountryCodeRequested = nil;
+util.AddNetworkString("SendCountryCode")
+
+net.Receive("SendCountryCode", function(ply)
+	local countryCode = net.ReadString()
+
+	if (ply.CountryCodeRequested) then
+		ply.CountryCodeRequested = nil;
 		
-		Clockwork.kernel:CountryCode(player, data);
+		Clockwork.kernel:CountryCode(ply, countryCode);
 	end;
-end);
+end)
 
 --[[netstream.Hook("GetTargetRecognises", function(player, data)
 	if (IsValid(data) and data:IsPlayer()) then
@@ -294,10 +298,9 @@ netstream.Hook("RecogniseOption", function(player, data)
 				end
 			else
 				local position = player:GetPos()
-				local plyTable = _player.GetAll()
 				local talkRadius = config.Get("talk_radius"):Get()
 
-				for k, v in ipairs(plyTable) do
+				for _, v in _player.Iterator() do
 					if (v:HasInitialized() and player != v) then
 						if (!Clockwork.player:IsNoClipping(v)) then
 							local distance = v:GetPos():Distance(position)

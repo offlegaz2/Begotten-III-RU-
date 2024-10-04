@@ -168,7 +168,7 @@ function SWEP:FireJavelin()
 			
 			for k, v in pairs(possible_replacements) do
 				if !v:IsTheSameAs(itemTable) and !v:IsBroken() then
-					self:SetNetworkedString("ItemID", v.itemID);
+					self:SetNWInt("ItemID", v.itemID);
 					
 					local slot;
 					
@@ -215,13 +215,13 @@ end
 function SWEP:GetHoldtypeOverride()
 	if IsValid(self.Owner) then
 		if self:GetNWString("activeShield"):len() > 0 then
-			if self.Owner:GetNWBool("ThrustStance") then
+			if self.Owner:GetNetVar("ThrustStance") then
 				self.realHoldType = self.HoldTypeAlternateShield;
 			else
 				self.realHoldType = self.HoldTypeShield;
 			end
 		else
-			if self.Owner:GetNWBool("ThrustStance") then
+			if self.Owner:GetNetVar("ThrustStance") then
 				self.realHoldType = self.HoldTypeAlternate;
 			else
 				self.realHoldType = self.HoldType;

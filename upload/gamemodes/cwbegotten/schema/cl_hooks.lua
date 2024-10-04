@@ -19,7 +19,7 @@ local requiredWorkshopAddons = {
 Schema.requiredMounts = {
 	--["episodic"] = "Half-Life 2: Episode 1",
 	--["ep2"] = "Half-Life 2: Episode 2",
-	--["cstrike"] = "Counter-Strike: Source",
+	["cstrike"] = "Counter-Strike: Source",
 };
 
 Schema.cheapleMessages = {"I've gotta get away from that fucking thing!", "It's getting closer!", "What does that thing want from me!?", "Why can't anyone else see it!?", "Shit, it's getting closer!", "Gotta keep moving... gotta keep moving..."};
@@ -568,7 +568,7 @@ function Schema:GetEntityMenuOptions(entity, options)
 				if table.HasValue(animalModels, entity:GetModel()) then
 					--local activeWeapon = Clockwork.Client:GetActiveWeapon();
 					
-					--if IsValid(activeWeapon) and activeWeapon.isDagger then
+					--if activeWeapon:IsValid() and activeWeapon.isDagger then
 						options["Mutilate"] = "cwCorpseMutilate";
 						options["Skin"] = "cwCorpseSkin";
 					--else
@@ -606,7 +606,7 @@ function Schema:GetEntityMenuOptions(entity, options)
 			elseif model == "models/animals/bear.mdl" then
 				--local activeWeapon = Clockwork.Client:GetActiveWeapon();
 				
-				--if IsValid(activeWeapon) and activeWeapon.isDagger then
+				--if activeWeapon:IsValid() and activeWeapon.isDagger then
 					options["Mutilate"] = "cwCorpseMutilate";
 					options["Skin"] = "cwCorpseSkin";
 				--[[else
@@ -693,7 +693,7 @@ function Schema:GetProgressBarInfoAction(action, percentage)
 		return {text = "You are reloading your "..weaponName.." with "..ammoName..". Click to cancel.", percentage = percentage, flash = percentage < 0}
 		--return {text = "You are reloading your weapon. Click to cancel.", percentage = percentage, flash = percentage > 75};
 	elseif (action == "building") then
-		return {text = "You are erecting a siege ladder.", percentage = percentage, flash = percentage > 75};
+		return {text = "You are erecting a siege ladder. Click to cancel.", percentage = percentage, flash = percentage > 75};
 	elseif (action == "bloodTest") then
 		return {text = "You are testing someone's blood for corruption. Click to cancel.", percentage = percentage, flash = percentage > 75};
 	elseif (action == "hell_teleport") then
@@ -1040,7 +1040,8 @@ function Schema:DrawTargetPlayerLevel(target, alpha, x, y)
 		if levelText then
 			return Clockwork.kernel:DrawInfo(Clockwork.kernel:ParseData(levelText), x, y, textColor, alpha);
 		end
-	elseif Clockwork.Client:GetNetVar("subfaction") == "Clan Reaver" and targetFaction ~= "Goreic Warrior" then
+	--elseif Clockwork.Client:GetNetVar("subfaction") == "Clan Reaver" and targetFaction ~= "Goreic Warrior" then
+	elseif playerFaction == "Goreic Warrior" and targetFaction ~= "Goreic Warrior" then
 		local level = target:GetNetVar("level", 1)
 		local textColor = Color(255, 100, 100, 255);
 		
@@ -1083,7 +1084,7 @@ end
 
 -- Called when a player's scoreboard options are needed.
 function Schema:GetPlayerScoreboardOptions(player, options, menu)
-	if (Clockwork.command:FindByID("CharSetCustomClass")) then
+	--[[if (Clockwork.command:FindByID("CharSetCustomClass")) then
 		if (Clockwork.player:HasFlags(Clockwork.Client, Clockwork.command:FindByID("CharSetCustomClass").access)) then
 			options["Custom Class"] = {};
 			options["Custom Class"]["Set"] = function()
@@ -1092,13 +1093,13 @@ function Schema:GetPlayerScoreboardOptions(player, options, menu)
 				end);
 			end;
 			
-			if (player:GetNetVar("customClass") != "") then
+			if (player:GetNetVar("customClass")) then
 				options["Custom Class"]["Take"] = function()
 					Clockwork.kernel:RunCommand("CharTakeCustomClass", player:Name());
 				end;
 			end;
 		end;
-	end;
+	end;]]--
 	
 	if (Clockwork.command:FindByID("CharPermaKill")) then
 		if (Clockwork.player:HasFlags(Clockwork.Client, Clockwork.command:FindByID("CharPermaKill").access)) then
@@ -1155,13 +1156,13 @@ end
 function Schema:GetScreenTextInfo()
 	local blackFadeAlpha = Clockwork.kernel:GetBlackFadeAlpha();
 	
-	if (Clockwork.Client:GetNetVar("permaKilled")) then
+	--[[if (Clockwork.Client:GetNetVar("permaKilled")) then
 		return {
 			alpha = blackFadeAlpha,
 			title = "THIS CHARACTER IS PERMANENTLY KILLED",
 			text = "Go to the character menu to make a new one."
 		};
-	elseif (Clockwork.Client:GetNetVar("beingChloro")) then
+	else]]if (Clockwork.Client:GetNetVar("beingChloro")) then
 		return {
 			alpha = 255 - blackFadeAlpha,
 			title = "SOMEBODY IS USING CHLOROFORM ON YOU"
@@ -1181,9 +1182,9 @@ end;
 
 -- Called when the local player's character screen faction is needed.
 function Schema:GetPlayerCharacterScreenFaction(character)
-	if (character.customClass and character.customClass != "") then
+	--[[if (character.customClass and character.customClass != "") then
 		return character.customClass;
-	end;
+	end;]]--
 end;
 
 -- Called when the cinematic intro info is needed.
@@ -1519,10 +1520,13 @@ local noDisplayClasses = {
 
 function Schema:ShouldNotDisplayTyping(text)
 	local prefix = config.Get("command_prefix"):Get()
-	local stringsub = string.sub(text, 1, 4);
 	
-	if table.HasValue(noDisplayClasses, stringsub) then
-		return false;
+	if string.sub(text, 1, 1) == prefix then
+		local stringsub = string.sub(text, 2, 4);
+		
+		if table.HasValue(noDisplayClasses, stringsub) then
+			return false;
+		end
 	end
 end
 
@@ -1720,6 +1724,10 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 					frame:AddText("Short Polearm: Up to +50% increased damage the further away the target is.", Color(110, 30, 30), nil, 0.9);
 				end
 				
+				if weaponTable.isLongsword then
+					frame:AddText("Swordplay: After deflecting or parrying an opponent, your next attack within 0.5s will have a faster striketime. This trait only works if you have 'Blademaster' unlocked.", Color(110, 30, 30), nil, 0.9);
+				end
+				
 				if weaponTable.MultiHit then
 					frame:AddText("Multi-Hit: Can hit up to "..tostring(weaponTable.MultiHit).." targets in a single swing.", Color(110, 30, 30), nil, 0.9);
 				end
@@ -1874,23 +1882,25 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 					local originalAP = armorpiercing;
 					
 					if armorpiercing then
+						local scalar = Lerp(condition / 90, 0, 1); -- Make it so damage does not start deterioriating until below 90% condition.
+					
 						if damagetype == DMG_CLUB then
-							armorpiercing = math.Round(armorpiercing * Lerp(condition / 100, 0.7, 1));
+							armorpiercing = math.Round(armorpiercing * Lerp(scalar, 0.7, 1));
 						else
-							armorpiercing = math.Round(armorpiercing * Lerp(condition / 100, 0.5, 1));
+							armorpiercing = math.Round(armorpiercing * Lerp(scalar, 0.5, 1));
 						end
-					end
-				
-					local percentage = math.min(armorpiercing / 100, 100);
-					local toolTip = function(frame)
-						frame:AddText("Armor-Piercing Damage", Color(110, 30, 30), nil, 1);
-						frame:AddText("Armor piercing damage reflects your weapon's ability to pierce the armor of your foes. Higher values mean that less of your weapon's primary damage will be negated by their armor.", Color(225, 200, 200), nil, 0.8);
-					end
-		
-					if armorpiercing < originalAP then
-						frame:AddBar(12, {{text = tostring(armorpiercing).." / "..tostring(originalAP), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
-					else
-						frame:AddBar(12, {{text = tostring(armorpiercing), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+					
+						local percentage = math.min(armorpiercing / 100, 100);
+						local toolTip = function(frame)
+							frame:AddText("Armor-Piercing Damage", Color(110, 30, 30), nil, 1);
+							frame:AddText("Armor piercing damage reflects your weapon's ability to pierce the armor of your foes. Higher values mean that less of your weapon's primary damage will be negated by their armor.", Color(225, 200, 200), nil, 0.8);
+						end
+			
+						if armorpiercing < originalAP then
+							frame:AddBar(12, {{text = tostring(armorpiercing).." / "..tostring(originalAP), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+						else
+							frame:AddBar(12, {{text = tostring(armorpiercing), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+						end
 					end
 				end
 			
@@ -1900,25 +1910,27 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 					local originalDamage = damage;
 					
 					if damage then
+						local scalar = Lerp(condition / 90, 0, 1); -- Make it so damage does not start deterioriating until below 90% condition.
+					
 						if damagetype == DMG_CLUB then
-							damage = math.Round(damage * Lerp(condition / 100, 0.75, 1));
+							damage = math.Round(damage * Lerp(scalar, 0.75, 1));
 						elseif damagetype == DMG_SLASH then
-							damage = math.Round(damage * Lerp(condition / 100, 0.4, 1));
-						elseif damagetype == DMG_VEHICLE then
-							damage = math.Round(damage * Lerp(condition / 100, 0.5, 1));
+							damage = math.Round(damage * Lerp(scalar, 0.4, 1));
+						else
+							damage = math.Round(damage * Lerp(scalar, 0.5, 1));
 						end
-					end
 
-					local percentage = math.min(damage / 100, 100);
-					local toolTip = function(frame)
-						frame:AddText("Primary Damage", Color(110, 30, 30), nil, 1);
-						frame:AddText("The damage to your foe's health that your weapon does. Can be negated by armor proportional to your weapon's armor-piercing damage value.", Color(225, 200, 200), nil, 0.8);
-					end
-		
-					if damage < originalDamage then
-						frame:AddBar(12, {{text = tostring(damage).." / "..tostring(originalDamage), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Primary Damage", Color(110, 30, 30), toolTip, true);
-					else
-						frame:AddBar(12, {{text = tostring(damage), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Primary Damage", Color(110, 30, 30), toolTip, true);
+						local percentage = math.min(damage / 100, 100);
+						local toolTip = function(frame)
+							frame:AddText("Primary Damage", Color(110, 30, 30), nil, 1);
+							frame:AddText("The damage to your foe's health that your weapon does. Can be negated by armor proportional to your weapon's armor-piercing damage value.", Color(225, 200, 200), nil, 0.8);
+						end
+			
+						if damage < originalDamage then
+							frame:AddBar(12, {{text = tostring(damage).." / "..tostring(originalDamage), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Primary Damage", Color(110, 30, 30), toolTip, true);
+						else
+							frame:AddBar(12, {{text = tostring(damage), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Primary Damage", Color(110, 30, 30), toolTip, true);
+						end
 					end
 				end
 				
@@ -1987,23 +1999,25 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 						end
 						
 						if armorpiercing then
+							local scalar = Lerp(condition / 90, 0, 1); -- Make it so damage does not start deterioriating until below 90% condition.
+						
 							if damagetype == DMG_CLUB then
-								armorpiercing = math.Round(armorpiercing * Lerp(condition / 100, 0.7, 1));
+								armorpiercing = math.Round(armorpiercing * Lerp(scalar, 0.7, 1));
 							else
-								armorpiercing = math.Round(armorpiercing * Lerp(condition / 100, 0.5, 1));
+								armorpiercing = math.Round(armorpiercing * Lerp(scalar, 0.5, 1));
 							end
-						end
 					
-						local percentage = math.min(armorpiercing / 100, 100);
-						local toolTip = function(frame)
-							frame:AddText("Alternate Armor-Piercing Damage", Color(110, 30, 30), nil, 1);
-							frame:AddText("Armor piercing damage reflects your weapon's alternate attack's ability to pierce the armor of your foes. Higher values mean that less of your weapon's primary damage will be negated by their armor.", Color(225, 200, 200), nil, 0.8);
-						end
-			
-						if armorpiercing < originalAP then
-							frame:AddBar(12, {{text = tostring(armorpiercing).." / "..tostring(originalAP), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
-						else
-							frame:AddBar(12, {{text = tostring(armorpiercing), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+							local percentage = math.min(armorpiercing / 100, 100);
+							local toolTip = function(frame)
+								frame:AddText("Alternate Armor-Piercing Damage", Color(110, 30, 30), nil, 1);
+								frame:AddText("Armor piercing damage reflects your weapon's alternate attack's ability to pierce the armor of your foes. Higher values mean that less of your weapon's primary damage will be negated by their armor.", Color(225, 200, 200), nil, 0.8);
+							end
+				
+							if armorpiercing < originalAP then
+								frame:AddBar(12, {{text = tostring(armorpiercing).." / "..tostring(originalAP), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+							else
+								frame:AddBar(12, {{text = tostring(armorpiercing), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+							end
 						end
 					end
 				
@@ -2019,23 +2033,25 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 						end
 						
 						if damage then
+							local scalar = Lerp(condition / 90, 0, 1); -- Make it so damage does not start deterioriating until below 90% condition.
+						
 							if damagetype == DMG_CLUB then
-								damage = math.Round(damage * Lerp(condition / 100, 0.75, 1));
+								damage = math.Round(damage * Lerp(scalar, 0.75, 1));
 							elseif damagetype == DMG_VEHICLE then
-								damage = math.Round(damage * Lerp(condition / 100, 0.5, 1));
+								damage = math.Round(damage * Lerp(scalar, 0.5, 1));
 							end
-						end
 					
-						local percentage = math.min((damage / 100) * weaponStats["attack"].altattackdamagemodifier, 100);
-						local toolTip = function(frame)
-							frame:AddText("Alternate Attack Damage", Color(110, 30, 30), nil, 1);
-							frame:AddText("The damage to your foe's health that your weapon's alternate attack does. Can be negated by armor proportional to your weapon's armor-piercing damage value.", Color(225, 200, 200), nil, 0.8);
-						end
-			
-						if damage < originalDamage then
-							frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)).." / "..tostring(math.Round(originalDamage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
-						else
-							frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
+							local percentage = math.min((damage / 100) * weaponStats["attack"].altattackdamagemodifier, 100);
+							local toolTip = function(frame)
+								frame:AddText("Alternate Attack Damage", Color(110, 30, 30), nil, 1);
+								frame:AddText("The damage to your foe's health that your weapon's alternate attack does. Can be negated by armor proportional to your weapon's armor-piercing damage value.", Color(225, 200, 200), nil, 0.8);
+							end
+				
+							if damage < originalDamage then
+								frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)).." / "..tostring(math.Round(originalDamage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
+							else
+								frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
+							end
 						end
 					end
 					
@@ -2371,23 +2387,25 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 						end
 						
 						if armorpiercing then
+							local scalar = Lerp(condition / 90, 0, 1); -- Make it so damage does not start deterioriating until below 90% condition.
+						
 							if damagetype == DMG_CLUB then
-								armorpiercing = math.Round(armorpiercing * Lerp(condition / 100, 0.7, 1));
+								armorpiercing = math.Round(armorpiercing * Lerp(scalar, 0.7, 1));
 							else
-								armorpiercing = math.Round(armorpiercing * Lerp(condition / 100, 0.5, 1));
+								armorpiercing = math.Round(armorpiercing * Lerp(scalar, 0.5, 1));
 							end
-						end
 					
-						local percentage = math.min(armorpiercing / 100, 100);
-						local toolTip = function(frame)
-							frame:AddText("Alternate Armor-Piercing Damage", Color(110, 30, 30), nil, 1);
-							frame:AddText("Armor piercing damage reflects your weapon's alternate attack's ability to pierce the armor of your foes. Higher values mean that less of your weapon's primary damage will be negated by their armor.", Color(225, 200, 200), nil, 0.8);
-						end
-			
-						if armorpiercing < originalAP then
-							frame:AddBar(12, {{text = tostring(armorpiercing).." / "..tostring(originalAP), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
-						else
-							frame:AddBar(12, {{text = tostring(armorpiercing), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+							local percentage = math.min(armorpiercing / 100, 100);
+							local toolTip = function(frame)
+								frame:AddText("Alternate Armor-Piercing Damage", Color(110, 30, 30), nil, 1);
+								frame:AddText("Armor piercing damage reflects your weapon's alternate attack's ability to pierce the armor of your foes. Higher values mean that less of your weapon's primary damage will be negated by their armor.", Color(225, 200, 200), nil, 0.8);
+							end
+				
+							if armorpiercing < originalAP then
+								frame:AddBar(12, {{text = tostring(armorpiercing).." / "..tostring(originalAP), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+							else
+								frame:AddBar(12, {{text = tostring(armorpiercing), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Armor-Piercing Damage", Color(110, 30, 30), toolTip, true);
+							end
 						end
 					end
 				
@@ -2403,23 +2421,25 @@ function Schema:ModifyItemMarkupTooltip(category, maximumWeight, weight, conditi
 						end
 						
 						if damage then
+							local scalar = Lerp(condition / 90, 0, 1); -- Make it so damage does not start deterioriating until below 90% condition.
+						
 							if damagetype == DMG_CLUB then
-								damage = math.Round(damage * Lerp(condition / 100, 0.75, 1));
+								damage = math.Round(damage * Lerp(scalar, 0.75, 1));
 							elseif damagetype == DMG_VEHICLE then
-								damage = math.Round(damage * Lerp(condition / 100, 0.5, 1));
+								damage = math.Round(damage * Lerp(scalar, 0.5, 1));
 							end
-						end
-					
-						local percentage = math.min((damage / 100) * weaponStats["attack"].altattackdamagemodifier, 100);
-						local toolTip = function(frame)
-							frame:AddText("Alternate Attack Damage", Color(110, 30, 30), nil, 1);
-							frame:AddText("The damage to your foe's health that your weapon's alternate attack does. Can be negated by armor proportional to your weapon's armor-piercing damage value.", Color(225, 200, 200), nil, 0.8);
-						end
-			
-						if damage < originalDamage then
-							frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)).." / "..tostring(math.Round(originalDamage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
-						else
-							frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
+						
+							local percentage = math.min((damage / 100) * weaponStats["attack"].altattackdamagemodifier, 100);
+							local toolTip = function(frame)
+								frame:AddText("Alternate Attack Damage", Color(110, 30, 30), nil, 1);
+								frame:AddText("The damage to your foe's health that your weapon's alternate attack does. Can be negated by armor proportional to your weapon's armor-piercing damage value.", Color(225, 200, 200), nil, 0.8);
+							end
+				
+							if damage < originalDamage then
+								frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)).." / "..tostring(math.Round(originalDamage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
+							else
+								frame:AddBar(12, {{text = tostring(math.Round(damage * weaponStats["attack"].altattackdamagemodifier)), percentage = percentage * 100, color = Color(110, 30, 30), font = "DermaDefault", textless = false, noDisplay = true}}, "Alternate Attack Damage", Color(110, 30, 30), toolTip, true);
+							end
 						end
 					end
 					

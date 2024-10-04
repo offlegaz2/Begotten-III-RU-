@@ -25,7 +25,7 @@ function cwTransmit:DisableNetworking(client, disable)
 end
 
 function cwTransmit:PreMakePlayerEnterObserverMode(player)
-	if player:IsAdmin() then
+	if player:IsAdmin() and !Clockwork.player:HasFlags(player, "i") then
 		self:DisableNetworking(player, true);
 	end
 end
@@ -37,9 +37,9 @@ end
 function cwTransmit:PlayerCharacterLoaded(player)
     if (player:IsAdmin()) then return; end
 
-    for _, v in pairs(_player.GetAll()) do
-        if(v == player or !v:IsAdmin() or v:GetMoveType() != MOVETYPE_NOCLIP) then continue; end
+	for _, v in _player.Iterator() do
+		if(v == player or !v:IsAdmin() or v:GetMoveType() != MOVETYPE_NOCLIP or Clockwork.player:HasFlags(v, "i")) then continue; end
 		
-        self:RecursiveSetPreventTransmit(v, player, true);
+		self:RecursiveSetPreventTransmit(v, player, true);
     end
 end

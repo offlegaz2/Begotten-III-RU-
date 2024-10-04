@@ -8,7 +8,7 @@
 library.New("equipment", Clockwork);
 
 if CLIENT then
-	for i, v in ipairs(_player.GetAll()) do
+	for _, v in _player.Iterator() do
 		if !v.equipmentSlots then
 			v.equipmentSlots = {};
 		end
@@ -108,8 +108,8 @@ if SERVER then
 		
 		player.equipmentSlots[slot] = itemTable;
 		
-		item.SendToPlayer(_player.GetAll(), itemTable);
-		netstream.Start(_player.GetAll(), "UpdateEquipment", {player, slot, itemTable.itemID});
+		item.SendToPlayer(PlayerCache or _player.GetAll(), itemTable);
+		netstream.Start(PlayerCache or _player.GetAll(), "UpdateEquipment", {player, slot, itemTable.itemID});
 		
 		if itemTable.equipmentSaveString then
 			if #itemTable.slots > 1 then
@@ -199,7 +199,7 @@ if SERVER then
 		
 		player.equipmentSlots[slot] = nil;
 		
-		local players = _player.GetAll();
+		local players = PlayerCache or _player.GetAll();
 					
 		-- Rearrange the slots.
 		if slot ~= itemTable.slots[#itemTable.slots] then
@@ -310,7 +310,7 @@ if SERVER then
 	end
 	
 	function Clockwork.equipment:SyncEquipment(player)
-		for i, v in ipairs(_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			if !v.equipmentSlots then
 				v.equipmentSlots = {};
 			end;
@@ -511,7 +511,7 @@ if SERVER then
 		
 		hook.Run("PlayerSetHandsModel", player, player:GetHands());
 		
-		for i, v in ipairs(_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			Clockwork.equipment:NetworkEquipmentToPlayer(player, v);
 		end
 	end);
@@ -567,15 +567,13 @@ else
 	end
 	
 	hook.Add("Tick", "TickEquipment", function()
-		for _, player in pairs(_player.GetAll()) do
+		for _, player in _player.Iterator() do
 			player.equipmentDrawnThisTick = false;
-			
-			local ragdollEntity = player:GetRagdollEntity();
-			
-			if (ragdollEntity) and !ragdollEntity:IsDormant() then
-				local ragdollState = player:GetDTInt(INT_RAGDOLLSTATE);
+
+			if player:GetDTInt(4) != 4 then
+				local ragdollEntity = player:GetDTEntity(2);
 				
-				if ragdollState != 0 and ragdollState != RAGDOLL_NONE then
+				if IsValid(ragdollEntity) and !ragdollEntity:IsDormant() then
 					hook.Run("PostPlayerDraw", player, 0, ragdollEntity);
 				end
 			end
@@ -590,18 +588,9 @@ else
 		local activeOffhand;
 		local activeShield;
 		local plyTab = player:GetTable();
+		local equipmentSlotModels = plyTab.equipmentSlotModels or {};
 		
-		if !plyTab.equipmentSlots then
-			plyTab.equipmentSlots = {};
-		end
-		
-		if !plyTab.equipmentSlotModels then
-			plyTab.equipmentSlotModels = {};
-		end
-		
-		local equipmentSlotModels = plyTab.equipmentSlotModels;
-		
-		if IsValid(activeWeapon) then
+		if activeWeapon:IsValid() then
 			activeWeaponClass = activeWeapon:GetClass();
 			activeOffhand = activeWeapon:GetNWString("activeOffhand");
 			activeShield = activeWeapon:GetNWString("activeShield");
@@ -612,12 +601,12 @@ else
 				local equipmentModel = equipmentSlotModels[itemTable.itemID];
 				local uniqueID = itemTable.uniqueID;
 
-				if !ragdollEntity and (activeWeaponClass == itemTable.weaponClass or activeShield == uniqueID or activeOffhand == uniqueID) then if IsValid(equipmentModel) then equipmentModel:Remove() end continue end;
+				if !ragdollEntity and (activeWeaponClass == itemTable.weaponClass or activeShield == uniqueID or activeOffhand == uniqueID) then if IsValid(equipmentModel) then equipmentModel:Remove() equipmentSlotModels[itemTable.itemID] = nil end continue end;
 				
 				if IsValid(equipmentModel) then
 					local parent = equipmentModel:GetParent();
 					
-					if (parent == player and ragdollEntity) or !IsValid(parent) then
+					if (ragdollEntity and parent == player) or !parent:IsValid() then
 						equipmentModel:Remove();
 						equipmentModel = nil;
 					end
@@ -672,6 +661,10 @@ else
 						equipmentModel:FollowBone(ragdollEntity or player, bone);
 					end
 					
+					if !plyTab.equipmentSlotModels then
+						plyTab.equipmentSlotModels = {};
+					end
+					
 					plyTab.equipmentSlotModels[itemTable.itemID] = equipmentModel;
 					
 					if ragdollEntity then
@@ -695,7 +688,7 @@ else
 	end);
 	
 	hook.Add("Think", "ThinkEquipment", function()
-		for _, player in pairs(_player.GetAll()) do
+		for _, player in _player.Iterator() do
 			local plyTab = player:GetTable();
 		
 			if plyTab.equipmentSlotModels and !plyTab.equipmentDrawnThisTick then
@@ -706,6 +699,20 @@ else
 				end
 				
 				plyTab.equipmentSlotModels = nil;
+			end
+		end
+	end);
+	
+	hook.Add("OnEntityCreated", "EntityCreatedEquipment", function(entity)
+		if entity:IsPlayer() then
+			local plyTab = entity:GetTable();
+			
+			if !plyTab.equipmentSlots then
+				plyTab.equipmentSlots = {};
+			end
+			
+			if !plyTab.equipmentSlotModels then
+				plyTab.equipmentSlotModels = {};
 			end
 		end
 	end);

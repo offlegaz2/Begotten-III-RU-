@@ -15,6 +15,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.faction = "Gatekeeper";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -24,9 +25,10 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
+	ITEM.bulletScale = 0.85; -- reduces bullet damage by 15%
 	ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
 	
 	ITEM.components = {breakdownType = "meltdown", items = {"iron_chunks"}};
@@ -49,6 +51,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.kinisgerOverride = true;
 
 	ITEM.conditionScale = 0
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -58,7 +61,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
 	ITEM.bulletScale = 0.70; -- reduces bullet damage by 30%
@@ -99,7 +102,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
 	ITEM.bulletScale = 0.70; -- reduces bullet damage by 30%
@@ -129,6 +132,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "armor/plate_damage_02.wav";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -138,7 +142,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
 	ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
@@ -160,6 +164,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -169,7 +174,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.70; -- reduces blunt damage by 30%
+	ITEM.bluntScale = 0.80; -- reduces blunt damage by 20%
 	ITEM.pierceScale = 0.70; -- reduces pierce damage by 30%
 	ITEM.slashScale = 0.60; -- reduces slash damage by 40%
 	ITEM.bulletScale = 0.75; -- reduces bullet damage by 25%
@@ -234,7 +239,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "GlassImpact";
 	ITEM.type = "leather";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.stabilityScale = 0.85; -- reduces stability damage by 15%
 		
 	ITEM.attributes = {"fear"};
@@ -377,6 +382,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
 	
 	ITEM.conditionScale = 1 -- item degrades 1x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -386,7 +392,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
 	ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
@@ -410,6 +416,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "npc/combine_soldier/zipline_clothing2.wav";
 	
 	ITEM.conditionScale = 1.1 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 	
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -419,7 +426,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "GlassImpact";
 	ITEM.type = "leather";
 
-	ITEM.bluntScale = 0.70; -- reduces blunt damage by 30%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.95; -- reduces pierce damage by 5%
 	ITEM.slashScale = 0.90; -- reduces slash damage by 10%
 	ITEM.stabilityScale = 0.85; -- reduces stability damage by 15%
@@ -442,16 +449,17 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "armor/plate_damage_02.wav";
 
 	ITEM.conditionScale = 1 -- item degrades 1x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
 	}
 
-	ITEM.protection = 40
+	ITEM.protection = 45
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "chainmail";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
 	ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
@@ -475,16 +483,17 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "armor/plate_damage_02.wav";
 
 	ITEM.conditionScale = 0.75 -- item degrades 0.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
 	}
 
-	ITEM.protection = 45
+	ITEM.protection = 50
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.75; -- reduces blunt damage by 25%
+	ITEM.bluntScale = 0.85; -- reduces blunt damage by 15%
 	ITEM.pierceScale = 0.85; -- reduces pierce damage by 15%
 	ITEM.slashScale = 0.70; -- reduces slash damage by 30%
 	ITEM.stabilityScale = 0.75; -- reduces stability damage by 25%
@@ -507,6 +516,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.useSound = "armor/plate_damage_02.wav";
 
 	ITEM.conditionScale = 0.75 -- item degrades 0.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -516,7 +526,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.70; -- reduces blunt damage by 30%
+	ITEM.bluntScale = 0.80; -- reduces blunt damage by 20%
 	ITEM.pierceScale = 0.70; -- reduces pierce damage by 30%
 	ITEM.slashScale = 0.60; -- reduces slash damage by 40%
 	ITEM.bulletScale = 0.75; -- reduces bullet damage by 25%
@@ -542,6 +552,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.faction = "Gatekeeper";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -551,13 +562,51 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.70; -- reduces blunt damage by 30%
+	ITEM.bluntScale = 0.80; -- reduces blunt damage by 20%
 	ITEM.pierceScale = 0.70; -- reduces pierce damage by 30%
 	ITEM.slashScale = 0.60; -- reduces slash damage by 40%
 	ITEM.bulletScale = 0.70; -- reduces bullet damage by 30%
 	ITEM.stabilityScale = 0.45; -- reduces stability damage by 55%
 	
-	ITEM.components = {breakdownType = "meltdown", items = {"fine_steel_chunks"}};
+	ITEM.components = {breakdownType = "meltdown", items = {"fine_steel_chunks", "steel_chunks"}};
+	
+ITEM:Register();
+
+local ITEM = Clockwork.item:New("bodygroup_base")
+	ITEM.name = "Ornate Gatekeeper Helmet"
+	ITEM.model = "models/begotten/items/gatekeeper_ornatehelm.mdl"
+	ITEM.iconoverride = "materials/begotten/ui/itemicons/ornate_gatekeeper_helmet.png"
+	ITEM.weight = 1.5
+	ITEM.uniqueID = "ornate_gatekeeper_helmet"
+	ITEM.category = "Helms"
+	ITEM.bodyGroup = 1
+	ITEM.bodyGroupVal = 10
+	ITEM.headSuffix = "_glaze";
+	ITEM.description = "An expertly crafted maximilian steel helmet. It is adorned with a glorious plume which denotes rank and status among the Gatekeeper Legion. Catalysts prevent anyone who opposes the Light to wear this."
+	ITEM.requireFaith = {"Faith of the Light"};
+	ITEM.excludeFactions = {"Goreic Warrior"};
+	ITEM.useSound = "armor/plate_damage_02.wav";
+	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
+	ITEM.faction = "Gatekeeper";
+
+	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
+
+	ITEM.effectiveLimbs = {
+		[HITGROUP_HEAD] = true,
+	}
+
+	ITEM.protection = 75
+	ITEM.hitParticle = "MetalSpark";
+	ITEM.type = "plate";
+
+	ITEM.bluntScale = 0.80; -- reduces blunt damage by 20%
+	ITEM.pierceScale = 0.70; -- reduces pierce damage by 30%
+	ITEM.slashScale = 0.60; -- reduces slash damage by 40%
+	ITEM.bulletScale = 0.50; -- reduces bullet damage by 50%
+	ITEM.stabilityScale = 0.45; -- reduces stability damage by 55%
+	
+	ITEM.components = {breakdownType = "meltdown", items = {"fine_steel_chunks", "fine_steel_chunks", "fine_steel_chunks", "cloth"}};
 	
 ITEM:Register();
 
@@ -575,6 +624,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -584,7 +634,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.70; -- reduces blunt damage by 30%
+	ITEM.bluntScale = 0.80; -- reduces blunt damage by 20%
 	ITEM.pierceScale = 0.70; -- reduces pierce damage by 30%
 	ITEM.slashScale = 0.60; -- reduces slash damage by 40%
 	ITEM.bulletScale = 0.60; -- reduces bullet damage by 40%
@@ -607,6 +657,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.overlay = "begotten/zomboverlay/gatekeep1";
 
 	ITEM.conditionScale = 0.75 -- item degrades 1.5x faster with damage related condition loss
+	ITEM.repairCostModifier = 0.5;
 
 	ITEM.effectiveLimbs = {
 		[HITGROUP_HEAD] = true,
@@ -616,7 +667,7 @@ local ITEM = Clockwork.item:New("bodygroup_base")
 	ITEM.hitParticle = "MetalSpark";
 	ITEM.type = "plate";
 
-	ITEM.bluntScale = 0.70; -- reduces blunt damage by 30%
+	ITEM.bluntScale = 0.80; -- reduces blunt damage by 20%
 	ITEM.pierceScale = 0.70; -- reduces pierce damage by 30%
 	ITEM.slashScale = 0.60; -- reduces slash damage by 40%
 	ITEM.bulletScale = 0.60; -- reduces bullet damage by 40%

@@ -865,7 +865,7 @@ if CLIENT then
 
 	-- Called when the world fog should be set up.
 	function zones:SetupWorldFog()
-		if ((!Clockwork.kernel:IsChoosingCharacter() and !Clockwork.Client:GetNWBool("senses")) or Clockwork.Client.MenuVector) then
+		if ((!Clockwork.kernel:IsChoosingCharacter() and !Clockwork.Client:GetNetVar("senses")) or Clockwork.Client.MenuVector) then
 			if (self:Enabled() and self:FogEnabled() and self.currentFogColors) then
 				local r, g, b = self.currentFogColors.r, self.currentFogColors.g, self.currentFogColors.b;
 				local fogStart = self.currentFogStart;
@@ -883,7 +883,7 @@ if CLIENT then
 				end;
 			end;
 		else
-			if Clockwork.Client:GetNWBool("senses") then
+			if Clockwork.Client:GetNetVar("senses") then
 				render.FogMode(1)
 				render.FogStart(0)
 				render.FogEnd(600)
@@ -960,7 +960,7 @@ if CLIENT then
 	function zones:PostDrawSkyBox()
 		-- Moved from senses plugin for compatibility.
 		if !Clockwork.kernel:IsChoosingCharacter() then
-			local senses = Clockwork.Client:GetNWBool("senses");
+			local senses = Clockwork.Client:GetNetVar("senses");
 			
 			if (senses) then
 				render.Clear(0, 0, 0, 255);
@@ -973,7 +973,7 @@ if CLIENT then
 	function zones:PostDraw2DSkyBox()
 		-- Moved from senses plugin for compatibility.
 		if !Clockwork.kernel:IsChoosingCharacter() then
-			local senses = Clockwork.Client:GetNWBool("senses");
+			local senses = Clockwork.Client:GetNetVar("senses");
 			
 			if (senses) then
 				render.Clear(0, 0, 0, 255);
@@ -1061,7 +1061,7 @@ else
 		local playersInZone = {};
 	
 		if istable(zone) then
-			for i, v in ipairs(_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				local vZone = v:GetCharacterData("LastZone", "wasteland");
 				
 				if table.HasValue(zone, vZone) then
@@ -1069,7 +1069,7 @@ else
 				end
 			end
 		else
-			for i, v in ipairs(_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				if v:GetCharacterData("LastZone", "wasteland") == zone then
 					table.insert(playersInZone, v);
 				end
@@ -1083,7 +1083,7 @@ else
 		local playersInSupraZone = {};
 	
 		if istable(supraZone) then
-			for i, v in ipairs(_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				local vZone = v:GetCharacterData("LastZone", "wasteland");
 				
 				if !supraZone or !self.supraZones[supraZone] then
@@ -1103,7 +1103,7 @@ else
 				end
 			end
 		else
-			for i, v in ipairs(_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				local vZone = v:GetCharacterData("LastZone", "wasteland");
 				
 				if !supraZone or !self.supraZones[supraZone] then

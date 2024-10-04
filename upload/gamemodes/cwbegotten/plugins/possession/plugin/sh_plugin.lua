@@ -101,14 +101,14 @@ function cwPossession:StartCommand(player, ucmd)
 				if possessor.changeStance then
 					local activeWeapon = player:GetActiveWeapon();
 					
-					if IsValid(activeWeapon) then
+					if activeWeapon:IsValid() then
 						local attacktable = GetTable(activeWeapon.AttackTable);
 
 						if (attackTable and attackTable["canaltattack"] == true) then
 							if !possessor.changeStanceTimer or possessor.changeStanceTimer <= curTime then
 								possessor.changeStanceTimer = curTime + 1;
 								
-								if player:GetNWBool("ThrustStance") == false then
+								if !player:GetNetVar("ThrustStance") then
 									if activeWeapon.isJavelin then
 										player:PrintMessage(HUD_PRINTTALK, "*** Switched to melee stance.")
 										possessor:PrintMessage(HUD_PRINTTALK, "*** Switched to melee stance.")
@@ -120,7 +120,7 @@ function cwPossession:StartCommand(player, ucmd)
 										possessor:PrintMessage(HUD_PRINTTALK, "*** Switched to thrusting stance.")
 									end
 									
-									player:SetNWBool( "ThrustStance", true )
+									player:SetLocalVar("ThrustStance", true);
 									
 									if activeWeapon.OnMeleeStanceChanged then
 										activeWeapon:OnMeleeStanceChanged("thrust_swing");
@@ -140,7 +140,7 @@ function cwPossession:StartCommand(player, ucmd)
 										possessor:PrintMessage(HUD_PRINTTALK, "*** Switched to slashing stance.")
 									end
 									
-									player:SetNWBool( "ThrustStance", false )
+									player:SetLocalVar("ThrustStance", false);
 									
 									if activeWeapon.OnMeleeStanceChanged then
 										activeWeapon:OnMeleeStanceChanged("reg_swing");
@@ -226,7 +226,7 @@ local COMMAND = Clockwork.command:New("DemonHeal");
 				target:SetNWInt("stability", max_stability);
 				--target:SetCharacterData("meleeStamina", max_poise);
 				--target:SetNWInt("meleeStamina", max_poise);
-				target:SetNWInt("freeze", 0);
+				target:SetLocalVar("freeze", 0);
 				target:SetBloodLevel(5000);
 				target:StopAllBleeding();
 				Clockwork.limb:HealBody(target, 100);
@@ -657,7 +657,7 @@ function COMMAND:OnRun(player, arguments)
 	else
 		Schema:EasyText(player, "grey", "No valid target argument found.");
 		if player:GetNetVar("tracktarget") then 
-			for k, v in pairs (_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				local steamID = v:SteamID();
 				if steamID == player:GetNetVar("tracktarget") then
 					
@@ -681,7 +681,7 @@ COMMAND.arguments = 0;
 -- Called when the command has been run.
 function COMMAND:OnRun(player, arguments)
 	if player:GetNetVar("tracktarget") then 
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			local steamID = v:SteamID();
 			if steamID == player:GetNetVar("tracktarget") then
 				player:SetNetVar("trackedby", nil);
@@ -704,7 +704,7 @@ COMMAND.arguments = 0;
 function COMMAND:OnRun(player, arguments)
 	Schema:EasyText(player, "grey", "No valid target argument found.");
 	if player:GetNetVar("tracktarget") then 
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			local steamID = v:SteamID();
 			if steamID == player:GetNetVar("tracktarget") then
 				

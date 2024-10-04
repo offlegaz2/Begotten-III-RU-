@@ -226,8 +226,7 @@ function cwRituals:GetProgressBarInfoAction(action, percentage)
 	end
 end
 
-local powderheelMat = Material("models/effects/portalfunnel_sheet");
-local powderheelColor = Color(255, 255, 255, 100);
+local powderheelAuraDistance = 512*512;
 
 function cwRituals:PostDrawOpaqueRenderables()
 	local curTime = CurTime();
@@ -237,7 +236,7 @@ function cwRituals:PostDrawOpaqueRenderables()
 	
 		self.storedPlayers = {};
 		
-		for k, v in pairs(ents.FindInSphere(Clockwork.Client:GetPos(), 1024)) do
+		for k, v in pairs(ents.FindInSphere(Clockwork.Client:GetPos(), 1200)) do
 			local player;
 			
 			if v:IsPlayer() then
@@ -320,10 +319,20 @@ function cwRituals:PostDrawOpaqueRenderables()
 				end;
 			end
 			
-			if v:GetNetVar("powderheelActive") then
-				render.SetMaterial(powderheelMat);
-				render.DrawSphere(entityPosition + Vector(0, 0, 40), config.Get("talk_radius"):Get(), 32, 32, powderheelColor);
-				render.DrawSphere(entityPosition + Vector(0, 0, 40), -config.Get("talk_radius"):Get(), 32, 32, powderheelColor);
+			if v:GetNetVar("powderheelActive") and v:GetPos():DistToSqr(Clockwork.Client:GetPos()) < powderheelAuraDistance then
+				cam.Start3D2D(v:GetPos(), angle_zero, 1);
+					cam.IgnoreZ(true);
+
+					surface.SetDrawColor(0, 150, 0, TimedCos(0.25, 50, 75, 0));
+					surface.SetMaterial(glowMaterial);
+
+					local radius = config.Get("talk_radius"):Get();
+					local halfRadius = radius*.5;
+
+					surface.DrawTexturedRect(-halfRadius,-halfRadius,radius,radius);
+
+					cam.IgnoreZ(false);
+				cam.End3D2D();
 			end
 		end;
 	end
@@ -334,52 +343,8 @@ netstream.Hook("HotkeyMenu", function(data)
 		return;
 	end
 	
-	local hotkeyRituals = {};
+	Clockwork.Client:ConCommand("begotten_rituals");
 	
-	for k, v in pairs(cwRituals.hotkeyRituals) do
-		if istable(v) and not table.IsEmpty(v) and #v == 3 then
-			local combination = {};
-			local combinationString;
-			
-			for i = 1, 3 do
-				local itemTable = Clockwork.item:FindByID(v[i]);
-				
-				if (itemTable) then
-					table.insert(combination, v[i]);
-					
-					if not combinationString then
-						combinationString = itemTable.name;
-					else
-						combinationString = combinationString..", "..itemTable.name;
-					end
-				end;
-			end
-			
-			if combinationString and #combination == 3 then
-				table.insert(hotkeyRituals, {combinationString, combination});
-			end
-		end
-	end;
-	
-	if (hotkeyRituals) then
-		local options = {};
-		
-		for i, v in ipairs(hotkeyRituals) do
-			options[i..": "..v[1]] = function()
-				--netstream.Start("DoRitual", v[2])
-				cwRituals:AttemptRitual(cwRituals:FindRitualByItems(v[2]), v[2]);
-			end;
-		end;
-		
-		cwRituals.hotkeyMenu = Clockwork.kernel:AddMenuFromData(nil, options);
-		
-		if (IsValid(cwRituals.hotkeyMenu)) then
-			cwRituals.hotkeyMenu:SetPos(
-				(ScrW() / 2) - (cwRituals.hotkeyMenu:GetWide() / 2),
-				(ScrH() / 2) - (cwRituals.hotkeyMenu:GetTall() / 2)
-			);
-		end;
-	end;
 end);
 
 netstream.Hook("LoadRitualBinds", function(data)

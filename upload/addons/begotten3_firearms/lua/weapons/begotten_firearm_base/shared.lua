@@ -180,7 +180,7 @@ function SWEP:Deploy()
 	
 	self:SetHoldType(self.HoldType)
 
-	self.Weapon:SetNWBool("Reloading", false)
+	--self.Weapon:SetNWBool("Reloading", false)
    
 	if !self.Owner:IsNPC() and self.Owner != nil then
 		if self.ResetSights and self.Owner:GetViewModel() != nil then
@@ -200,14 +200,16 @@ function SWEP:OnDrop()
 end
  
 function SWEP:Holster()
-	if CLIENT and IsValid(self.Owner) and self.Owner:IsPlayer() then
-		local vm = self.Owner:GetViewModel()
-		
-		if IsValid(vm) then
-			self:ResetBonePositions(vm)
+	if IsValid(self.Owner) and self.Owner:IsPlayer() then
+		if CLIENT then
+			local vm = self.Owner:GetViewModel()
+			
+			if IsValid(vm) then
+				self:ResetBonePositions(vm)
+			end
+		else
+			self.Owner:SetFOV(0, 0.5);
 		end
-		
-		self.Owner:SetFOV(0, 0.5);
 	end
 	
 	if self.OnHolster then
@@ -279,10 +281,9 @@ function SWEP:AdjustFireBegotten()
 						local forceJam = false;
 					
 						if cwRituals then
-							local players = _player.GetAll();
 							local ownerPos = self.Owner:GetPos();
 							
-							for i, v in ipairs(players) do
+							for _, v in _player.Iterator() do
 								if v:GetNetVar("powderheelActive") then
 									if v:GetPos():Distance(ownerPos) <= config.Get("talk_radius"):Get() then
 										forceJam = true;
@@ -328,7 +329,7 @@ function SWEP:AdjustFireBegotten()
 										
 										Clockwork.chatBox:AddInTargetRadius(self.Owner, "me", "pulls the trigger on their "..self.PrintName.." and it suddenly explodes!", position, config.Get("talk_radius"):Get() * 2);
 										
-										Schema:EasyText(GetAdmins(), "icon16/bomb.png", "tomato", self.Owner:Name().."'s "..self.PrintName.." exploded!");
+										Schema:EasyText(Schema:GetAdmins(), "icon16/bomb.png", "tomato", self.Owner:Name().."'s "..self.PrintName.." exploded!");
 									
 										local effectData = EffectData();
 										effectData:SetStart(position);
@@ -1067,7 +1068,7 @@ function SWEP:IronSight()
 	
 	local bIron = self:GetIronsights();
    
-	if self.Owner:KeyPressed(IN_SPEED) and not (self.Weapon:GetNWBool("Reloading")) then
+	if self.Owner:KeyPressed(IN_SPEED) --[[and not (self.Weapon:GetNWBool("Reloading"))]] then
 		if self.Weapon:GetNextPrimaryFire() <= (CurTime()+0.3) then
 			self.Weapon:SetNextPrimaryFire(CurTime()+0.3)                           -- Make it so you can't shoot for another quarter second
 		end
@@ -1098,7 +1099,7 @@ function SWEP:IronSight()
 	end
 
 	if !self.Owner:KeyDown(IN_SPEED) then
-		if self.Owner:KeyPressed(IN_ATTACK2) and not (self.Weapon:GetNWBool("Reloading")) then
+		if self.Owner:KeyPressed(IN_ATTACK2) --[[and not (self.Weapon:GetNWBool("Reloading"))]] then
 			self.Owner:SetFOV(self.Secondary.IronFOV, 0.5);
 			self.IronSightsPos = self.SightsPos                                     -- Bring it up
 			self.IronSightsAng = self.SightsAng                                     -- Bring it up
@@ -1188,10 +1189,8 @@ function SWEP:Think()
 						weapon = self:EntIndex()
 					})
 
-					if self:GetNWString("ItemID") ~= itemTable.itemID then
-						self:SetNWString(
-							"ItemID", tostring(itemTable.itemID)
-						)
+					if self:GetNWInt("ItemID") ~= itemTable.itemID then
+						self:SetNWInt("ItemID", itemTable.itemID)
 					end
 					
 					self.cwItemTable = itemTable

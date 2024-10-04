@@ -129,7 +129,7 @@ function cwPossession:HUDPaint()
 					
 					draw.SimpleText("Stance:", "UseHint", 50, 215, COLOR_WHITE, TEXT_ALIGN_LEFT, TEXT_ALIGN_RIGHT);
 					
-					if victim:GetNWBool("ThrustStance") == true then
+					if victim:GetNetVar("ThrustStance") == true then
 						draw.SimpleText("Thrust", "UseHint", 120, 215, COLOR_WHITE, TEXT_ALIGN_LEFT, TEXT_ALIGN_RIGHT);
 					else
 						draw.SimpleText("Swipe", "UseHint", 120, 215, COLOR_WHITE, TEXT_ALIGN_LEFT, TEXT_ALIGN_RIGHT);
@@ -160,11 +160,7 @@ end;
 function cwPossession:AddEntityOutlines(outlines)
 	local trackedPlayerID = Clockwork.Client:GetNetVar("tracktarget");
 	if trackedPlayerID then
-		local playerCount = _player.GetCount();
-		local players = _player.GetAll();
-
-		for i = 1, playerCount do
-			local v, k = players[i], i;
+		for _, v in _player.Iterator() do
 			if v:SteamID() == trackedPlayerID then
 				self:DrawPlayerOutline(v, outlines, Color(255, 0, 255, 255));
 			end;

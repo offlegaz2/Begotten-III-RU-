@@ -97,7 +97,7 @@ local COMMAND = Clockwork.command:New("SetHealthMaxAll");
 			affect_duelists = true;
 		end
 		
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			if v:HasInitialized() and v:Alive() then
 				if !v.opponent or (v.opponent and affect_duelists) then
 					v:SetHealth(v:GetMaxHealth() or 100);
@@ -234,7 +234,7 @@ local COMMAND = Clockwork.command:New("PlyGodAll");
 
 	-- Called when the command has been run.
 	function COMMAND:OnRun(player, arguments)
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			v:GodEnable();
 		end;
 		
@@ -249,7 +249,7 @@ local COMMAND = Clockwork.command:New("PlyUnGodAll");
 
 	-- Called when the command has been run.
 	function COMMAND:OnRun(player, arguments)
-		for k, v in pairs (_player.GetAll()) do
+		for _, v in _player.Iterator() do
 			v:GodDisable();
 		end;
 		
@@ -323,6 +323,52 @@ local COMMAND = Clockwork.command:New("CharTransferFaction");
 						
 						if subfaction and istable(subfaction) then
 							target:SetCharacterData("Subfaction", subfaction.name, true);
+							
+							if cwBeliefs then
+								-- Remove any subfaction locked beliefs.
+								local beliefsTab = cwBeliefs:GetBeliefs();
+								local targetBeliefs = target:GetCharacterData("beliefs");
+								local targetEpiphanies = target:GetCharacterData("points", 0);
+								
+								for k, v in pairs(beliefsTab) do
+									if v.lockedSubfactions and table.HasValue(v.lockedSubfactions, subfaction.name) then
+										if targetBeliefs[k] then
+											targetBeliefs[k] = false;
+											
+											targetEpiphanies = targetEpiphanies + 1;
+											
+											local beliefTree = cwBeliefs:FindBeliefTreeByBelief(k);
+											
+											if beliefTree.hasFinisher and targetBeliefs[beliefTree.uniqueID.."_finisher"] then
+												targetBeliefs[beliefTree.uniqueID.."_finisher"] = false;
+											end
+										end
+									end
+								end
+								
+								target:SetCharacterData("beliefs", targetBeliefs);
+								target:SetLocalVar("points", targetEpiphanies);
+								target:SetCharacterData("points", targetEpiphanies);
+								
+								--local max_poise = target:GetMaxPoise();
+								--local poise = target:GetNWInt("meleeStamina");
+								local max_stamina = target:GetMaxStamina();
+								local max_stability = target:GetMaxStability();
+								local stamina = target:GetNWInt("Stamina", 100);
+								
+								target:SetMaxHealth(target:GetMaxHealth());
+								target:SetLocalVar("maxStability", max_stability);
+								--target:SetLocalVar("maxMeleeStamina", max_poise);
+								--target:SetNWInt("meleeStamina", math.min(poise, max_poise));
+								target:SetLocalVar("Max_Stamina", max_stamina);
+								target:SetCharacterData("Max_Stamina", max_stamina);
+								target:SetNWInt("Stamina", math.min(stamina, max_stamina));
+								target:SetCharacterData("Stamina", math.min(stamina, max_stamina));
+								
+								hook.Run("RunModifyPlayerSpeed", target, target.cwInfoTable, true)
+								
+								target:NetworkBeliefs();
+							end
 						else
 							target:SetCharacterData("Subfaction", "", true);
 						end
@@ -384,6 +430,52 @@ local COMMAND = Clockwork.command:New("CharTransferSubfaction");
 				
 				if istable(subfaction) then
 					target:SetCharacterData("Subfaction", subfaction.name, true);
+					
+					if cwBeliefs then
+						-- Remove any subfaction locked beliefs.
+						local beliefsTab = cwBeliefs:GetBeliefs();
+						local targetBeliefs = target:GetCharacterData("beliefs");
+						local targetEpiphanies = target:GetCharacterData("points", 0);
+						
+						for k, v in pairs(beliefsTab) do
+							if v.lockedSubfactions and table.HasValue(v.lockedSubfactions, subfaction.name) then
+								if targetBeliefs[k] then
+									targetBeliefs[k] = false;
+									
+									targetEpiphanies = targetEpiphanies + 1;
+									
+									local beliefTree = cwBeliefs:FindBeliefTreeByBelief(k);
+									
+									if beliefTree.hasFinisher and targetBeliefs[beliefTree.uniqueID.."_finisher"] then
+										targetBeliefs[beliefTree.uniqueID.."_finisher"] = false;
+									end
+								end
+							end
+						end
+						
+						target:SetCharacterData("beliefs", targetBeliefs);
+						target:SetLocalVar("points", targetEpiphanies);
+						target:SetCharacterData("points", targetEpiphanies);
+						
+						--local max_poise = target:GetMaxPoise();
+						--local poise = target:GetNWInt("meleeStamina");
+						local max_stamina = target:GetMaxStamina();
+						local max_stability = target:GetMaxStability();
+						local stamina = target:GetNWInt("Stamina", 100);
+						
+						target:SetMaxHealth(target:GetMaxHealth());
+						target:SetLocalVar("maxStability", max_stability);
+						--target:SetLocalVar("maxMeleeStamina", max_poise);
+						--target:SetNWInt("meleeStamina", math.min(poise, max_poise));
+						target:SetLocalVar("Max_Stamina", max_stamina);
+						target:SetCharacterData("Max_Stamina", max_stamina);
+						target:SetNWInt("Stamina", math.min(stamina, max_stamina));
+						target:SetCharacterData("Stamina", math.min(stamina, max_stamina));
+						
+						hook.Run("RunModifyPlayerSpeed", target, target.cwInfoTable, true)
+						
+						target:NetworkBeliefs();
+					end
 					
 					local targetAngles = target:EyeAngles();
 					local targetPos = target:GetPos();
@@ -825,7 +917,7 @@ local COMMAND = Clockwork.command:New("CharKick");
 		if !target.cwCharacter then Schema:EasyText(player, "peru", target:Name().." does not have a character loaded!"); return; end
 		
 		Clockwork.player:UnloadCharacter(target);
-        Schema:EasyText(GetAdmins(), "yellow", (target:Name().." has been kicked off of their character by "..player:Name().."."));
+        Schema:EasyText(Schema:GetAdmins(), "yellow", (target:Name().." has been kicked off of their character by "..player:Name().."."));
 		Clockwork.player:SetCreateFault(target, "You have been kicked off of your character.");
     end
 COMMAND:Register();

@@ -5,20 +5,6 @@
 
 local map = game.GetMap() == "rp_begotten3";
 
-function GetAdmins()
-	local admins = {}
-	local players = _player.GetAll();
-	
-	for i = 1, _player.GetCount() do
-		local v = players[i];
-		if (v:IsAdmin()) then
-			admins[#admins + 1] = v;
-		end;
-	end;
-	
-	return admins;
-end;
-
 function Schema:ClockworkInitialized()
 	if !self.bountyData then
 		self.bountyData = Clockwork.kernel:RestoreSchemaData("bountyData") or {};
@@ -165,6 +151,7 @@ end;
 function Schema:ClockworkInitPostEntity()
 	self:LoadDummies();
 	self:LoadRadios();
+	self:LoadPopeSpeakers()
 	self:LoadNPCs();
 	self:LoadNPCSpawns();
 	self:SpawnBegottenEntities();
@@ -576,7 +563,7 @@ function Schema:EntityHandleMenuOption(player, entity, option, arguments)
 							entity:Remove();
 						end
 						
-						Schema:EasyText(GetAdmins(), "green", player:Name().." has claimed the bounty on "..entityPlayer:Name().." for "..tostring(entityPlayer:GetBounty()).." coin!");
+						Schema:EasyText(Schema:GetAdmins(), "green", player:Name().." has claimed the bounty on "..entityPlayer:Name().." for "..tostring(entityPlayer:GetBounty()).." coin!");
 						
 						entityPlayer:RemoveBounty();
 						
@@ -593,7 +580,7 @@ function Schema:EntityHandleMenuOption(player, entity, option, arguments)
 					Schema:RemoveBounty(entity:GetNWInt("bountyKey"));
 					entity:Remove();
 					
-					Schema:EasyText(GetAdmins(), "green", player:Name().." has claimed the bounty on "..bountyData.name.." for "..tostring(bountyData.bounty).." coin!");
+					Schema:EasyText(Schema:GetAdmins(), "green", player:Name().." has claimed the bounty on "..bountyData.name.." for "..tostring(bountyData.bounty).." coin!");
 				end
 			end
 		end
@@ -793,18 +780,14 @@ function Schema:PlayerRadioUsed(player, text, listeners, eavesdroppers)
 	local newEavesdroppers = {};
 	local talkRadius = Clockwork.config:Get("talk_radius"):Get() * 2;
 	local frequency = player:GetCharacterData("frequency");
-	
-	local playerCount = _player.GetCount();
-	local players = _player.GetAll();
 
 	for k, v in ipairs(ents.FindByClass("cw_radio")) do
 		local radioPosition = v:GetPos();
 		local radioFrequency = v:GetFrequency();
 		
 		if (!v:IsOff() and !v:IsCrazy() and radioFrequency == frequency) then
-			for i = 1, playerCount do
-				local v2, k2 = players[i], i;
-				if ( v2:HasInitialized() and !listeners[v2] and !eavesdroppers[v2] ) then
+			for _, v2 in _player.Iterator() do
+				if (v2:HasInitialized() and !listeners[v2] and !eavesdroppers[v2]) then
 					if (v2:GetPos():DistToSqr(radioPosition) <= (talkRadius * talkRadius)) then
 						newEavesdroppers[v2] = v2;
 					end;
@@ -826,9 +809,9 @@ function Schema:PlayerAdjustCharacterScreenInfo(player, character, info)
 		info.details = "This character is permanently killed.";
 	end;
 
-	if (character.data["customclass"]) then
+	--[[if (character.data["customclass"]) then
 		info.customClass = character.data["customclass"];
-	end;
+	end;]]--
 	
 	if (character.data["rank"]) then
 		info.rank = character.data["rank"];
@@ -872,7 +855,7 @@ end;
 
 -- Called when a player's radio info should be adjusted.
 function Schema:PlayerAdjustRadioInfo(player, info)
-	--[[for k, v in ipairs( _player.GetAll() ) do
+	--[[for i, v in _player.Iterator() do
 		if ( v:HasInitialized() and v:HasItem("handheld_radio")) then
 			if ( v:GetCharacterData("frequency") == player:GetCharacterData("frequency") ) then
 				if (v:GetNetVar("tied") == 0) then
@@ -1106,8 +1089,13 @@ end;
 
 -- Called when a player spawns for the first time.
 function Schema:PlayerInitialSpawn(player)
-	player:SetNetVar("customClass", "");
-	player:SetNetVar("permaKilled", false);
+	--[[if player:GetNetVar("customClass") then
+		player:SetNetVar("customClass", nil);
+	end]]--
+	
+	--[[if player:GetNetVar("permaKilled") then
+		player:SetLocalVar("permaKilled", false);
+	end]]--
 	
 	if !self.autoTieEnabled or player:IsAdmin() then
 		player:SetNetVar("tied", 0);
@@ -1189,14 +1177,7 @@ function Schema:KeyPress(player, key)
 	elseif (key == IN_ATTACK) then
 		local action = Clockwork.player:GetAction(player);
 		
-		if (action == "reloading") then
-			if player.itemUsing and IsValid(player.itemUsing) then
-				player.itemUsing.beingUsed = false;
-				player.itemUsing = nil;
-			end
-			
-			Clockwork.player:SetAction(player, nil);
-		elseif (action == "mutilating") or (action == "skinning") then
+		if (action == "reloading") or (action == "mutilating") or (action == "skinning") or (action == "building") then
 			Clockwork.player:SetAction(player, nil);
 		elseif (action == "bloodTest") then
 			Clockwork.chatBox:AddInTargetRadius(player, "me", "stops the blood test.", player:GetPos(), config.Get("talk_radius"):Get() * 2);
@@ -1240,8 +1221,16 @@ function Schema:PlayerCanSwitchCharacter(player, character)
 		return false, "You cannot switch to this character while your current character is dying!";
 	end
 	
-	if Schema.fuckerJoeActive and !player:IsAdmin() then
-		return false, "You cannot switch to this character while Fucker Joe is on the loose!";
+	if !player:IsAdmin() then
+		if Clockwork.charSwappingDisabled and player.cwCharacter and player:Alive() then
+			Clockwork.player:NotifyAdmins("operator", player:Name().." has attempted to switch characters while charswapping is disabled!");
+		
+			if Schema.fuckerJoeActive then
+				return false, "You cannot switch to this character while Fucker Joe is on the loose!";
+			end
+			
+			return false, "You cannot switch to this character while charswapping is disabled!";
+		end
 	end
 end;
 
@@ -1270,9 +1259,7 @@ end;
 function Schema:CanTool(player, trace, tool) end;
 
 -- Called when a player's shared variables should be set.
-function Schema:OnePlayerSecond(player, curTime, infoTable)
-	--player:SetNetVar("customClass", player:GetCharacterData("customclass", ""));
-end;
+function Schema:OnePlayerSecond(player, curTime, infoTable) end;
 
 -- Called when an entity is created.
 function Schema:OnEntityCreated(entity)
@@ -2227,7 +2214,9 @@ function Schema:PlayerUseItem(player, itemTable, itemEntity)
 						if Schema.Ranks then
 							for k, v in pairs(Schema.Ranks) do
 								for i, v2 in ipairs(v) do
-									table.insert(blacklistedNames, string.lower(v2));
+									if v2 ~= "" then
+										table.insert(blacklistedNames, string.lower(v2));
+									end
 								end
 							end
 						end
@@ -2502,26 +2491,35 @@ function Schema:PlayerChangedRanks(player)
 			player:SetCharacterData("rank", 1);
 		end;
 		
-		player:OverrideName(nil)
-		local name = player:Name();
-
 		local factionTable = Clockwork.faction:FindByID(faction);
 		
 		if factionTable and factionTable.GetName then
 			player:OverrideName(factionTable:GetName(player));
+			
+			return;
 		else
 			local rankOverride = player:GetCharacterData("rankOverride");
 			
-			if rankOverride then
-				player:OverrideName(rankOverride.." "..player:Name());
+			if rankOverride and rankOverride ~= "" then
+				player:OverrideName(rankOverride.." "..player:Name(true));
+				
+				return;
 			else
 				local rank = math.Clamp(player:GetCharacterData("rank", 1), 1, #self.Ranks[faction]);
 
-				if (rank and isnumber(rank) and self.Ranks[faction][rank]) then
-					player:OverrideName(self.Ranks[faction][rank].." "..player:Name());
+				if (rank and isnumber(rank)) then
+					local rankText = self.Ranks[faction][rank];
+					
+					if rankText and rankText ~= "" then
+						player:OverrideName(rankText.." "..player:Name(true));
+					
+						return;
+					end
 				end;
 			end;
 		end
+		
+		player:OverrideName(nil);
 	end;
 end;
 
@@ -2645,13 +2643,15 @@ function Schema:PlayerCharacterLoaded(player)
 		else
 			local rankOverride = player:GetCharacterData("rankOverride");
 			
-			if rankOverride then
+			if rankOverride and rankOverride ~= "" then
 				player:OverrideName(rankOverride.." "..player:Name());
 			else
 				local rank = math.Clamp(player:GetCharacterData("rank", 1), 1, #self.Ranks[faction]);
 
 				if (rank and isnumber(rank) and self.Ranks[faction][rank]) then
-					player:OverrideName(self.Ranks[faction][rank].." "..player:Name());
+					if self.Ranks[faction][rank] ~= "" then
+						player:OverrideName(self.Ranks[faction][rank].." "..player:Name());
+					end
 				end;
 			end;
 		end
@@ -3106,20 +3106,17 @@ end;
 function Schema:ActionStopped(player, action)
 	if action == "building" then
 		if player.ladderConstructing then
-			local ladderItem = item.CreateInstance("siege_ladder");
-			
-			if ladderItem then
-				ladderItem:SetCondition(player.ladderConstructing.condition, true);
-				
-				player:GiveItem(ladderItem);
-			end
-			
 			Schema.siegeLadderPositions[player.ladderConstructing.index].occupier = nil;
 			
 			player.ladderConstructing = nil;
 		end
 	elseif action == "helljaunting" then
 		player.teleporting = false
+	elseif action == "reloading" then
+		if player.itemUsing and IsValid(player.itemUsing) then
+			player.itemUsing.beingUsed = false;
+			player.itemUsing = nil;
+		end
 	end
 end;
 
@@ -3150,7 +3147,7 @@ function Schema:ModifyPlayerSpeed(player, infoTable, action)
 	if shieldItem and shieldItem.requiredbeliefs and table.HasValue(shieldItem.requiredbeliefs, "defender") then
 		local activeWeapon = player:GetActiveWeapon();
 		
-		if IsValid(activeWeapon) and activeWeapon:GetNWString("activeShield"):len() > 0 and activeWeapon:GetNWString("activeShield") == shieldItem.uniqueID then
+		if activeWeapon:IsValid() and activeWeapon:GetNWString("activeShield"):len() > 0 and activeWeapon:GetNWString("activeShield") == shieldItem.uniqueID then
 			infoTable.runSpeed = infoTable.runSpeed * 0.9;
 		end
 	end
@@ -3217,9 +3214,7 @@ function Schema:CinderBlockExecution(player, target, itemTable)
 						cinderBlock:SetNWBool("BIsCinderBlock", true)
 						cinderBlock:SetOwner(entity)
 						
-						local players = _player.GetAll();
-
-						for k, v in pairs(players) do
+						for _, v in _player.Iterator() do
 							if (IsValid(v:GetRagdollEntity())) then
 								if (v:GetRagdollEntity() == entity) then
 									entity.RagdollOwner = v

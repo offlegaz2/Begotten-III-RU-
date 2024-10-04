@@ -145,8 +145,8 @@ function cwRituals:PerformRitual(player, uniqueID, itemIDs, bIgnoreItems, bIgnor
 	local curTime = CurTime();
 	
 	if (IsValid(player) and uniqueID and isstring(uniqueID)) then
-		if (!player.cwNextRitual or player.cwNextRitual < curTime) then
-			player.cwNextRitual = curTime + 10;
+		if (!player:GetNWInt("cwNextRitual") or player:GetNWInt("cwNextRitual")  < curTime) then
+			player:SetNWInt("cwNextRitual", curTime + 10);
 	
 			local bHasFlags, bHasRequirements = hook.Run("PlayerCanPerformRitual", player, uniqueID, bIgnoreItems, bIgnoreBeliefs);
 			local ritualTable = self.rituals.stored[uniqueID];
@@ -197,7 +197,7 @@ function cwRituals:PerformRitual(player, uniqueID, itemIDs, bIgnoreItems, bIgnor
 			
 			hook.Run("PlayerFailedRitual", player, uniqueID, ritualTable, bHasRequirements, bHasFlags)
 		else
-			Schema:EasyText(player, "peru", "You must wait another "..-math.ceil(curTime - player.cwNextRitual).." seconds before attempting to perform a ritual again!")
+			Schema:EasyText(player, "peru", "You must wait another "..-math.ceil(curTime - player:GetNWInt("cwNextRitual")).." seconds before attempting to perform a ritual again!")
 		end;
 	end;
 end;
@@ -319,10 +319,9 @@ function cwRituals:PreEntityTakeDamage(entity, damageInfo)
 		end
 		
 		if damageInfo:IsDamageType(DMG_BULLET) or damageInfo:IsDamageType(DMG_BUCKSHOT) then
-			local players = _player.GetAll();
 			local entPos = entity:GetPos();
 			
-			for i, v in ipairs(players) do
+			for _, v in _player.Iterator() do
 				if v:GetNetVar("powderheelActive") and v:GetPos():Distance(entPos) <= config.Get("talk_radius"):Get() then
 					damageInfo:ScaleDamage(0.5);
 					
@@ -342,7 +341,7 @@ function cwRituals:PlayerCharacterLoaded(player)
 		if subfaction == "Kinisger" then
 			local lastAppearanceChange = player:GetCharacterData("lastAppearanceChange");
 		
-			for k, v in pairs(_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				if IsValid(v) and v ~= player and v:HasInitialized() and v:GetFaction() ~= "Children of Satan" then
 					local vCharLastPlayed = v:QueryCharacter("LastPlayed");
 
@@ -352,7 +351,7 @@ function cwRituals:PlayerCharacterLoaded(player)
 				end
 			end
 		elseif player:GetFaction() ~= "Children of Satan" then
-			for k, v in pairs(_player.GetAll()) do
+			for _, v in _player.Iterator() do
 				if IsValid(v) and v ~= player and v:HasInitialized() and v:GetSubfaction() == "Kinisger" then
 					local lastAppearanceChange = v:GetCharacterData("lastAppearanceChange");
 					
@@ -583,7 +582,7 @@ function cwRituals:PlayerCharacterLoaded(player)
 		end
 	end
 	
-	netstream.Start(player, "LoadRitualBinds", player:GetCharacterData("BoundRituals", {}));
+	netstream.Start(player, "LoadRitualBinds", player:GetCharacterData("BoundRitualsNew", {}));
 end;
 
 function cwRituals:EntityRemoved(entity)
@@ -637,11 +636,7 @@ function cwRituals:DoPlayerDeath(player, attacker, damageInfo)
 				
 				Clockwork.chatBox:Add(attacker, nil, "itnofake", "As you strike down "..player:Name().." and fulfill the blood contract, you feel your pockets suddenly become heavier.");
 				
-				local playerCount = _player.GetCount();
-				local players = _player.GetAll();
-
-				for i = 1, playerCount do
-					local v, k = players[i], i;
+				for _, v in _player.Iterator() do
 					if v:HasInitialized() then
 						if v == player or v:GetFaith() == "Faith of the Dark" then
 							Clockwork.chatBox:Add(v, nil, "darkwhispernoprefix", "Death has been delivered to a marked one. "..player:Name().." has been dispatched and his soul now belongs to the Dark Lord.");
@@ -944,7 +939,9 @@ netstream.Hook("AppearanceAlterationMenu", function(player, data)
 			if Schema.Ranks then
 				for k, v in pairs(Schema.Ranks) do
 					for i, v2 in ipairs(v) do
-						table.insert(blacklistedNames, string.utf8lower(v2));
+						if v2 ~= "" then
+							table.insert(blacklistedNames, string.utf8lower(v2));
+						end
 					end
 				end
 			end
@@ -1103,14 +1100,16 @@ netstream.Hook("AppearanceAlterationMenu", function(player, data)
 								local rank = math.Clamp(player:GetCharacterData("rank", 1), 1, #Schema.Ranks[selectedFaction]);
 								
 								if (rank and isnumber(rank) and Schema.Ranks[selectedFaction][rank]) then
-									player:OverrideName(Schema.Ranks[selectedFaction][rank].." "..player:Name());
+									if Schema.Ranks[selectedFaction][rank] ~= "" then
+										player:OverrideName(Schema.Ranks[selectedFaction][rank].." "..player:Name());
+									end
 								end;
 							end;
 						end
 					end
 				end
 				
-				for k, v in pairs(_player.GetAll()) do
+				for _, v in _player.Iterator() do
 					if IsValid(v) and v:HasInitialized() and v:GetFaction() ~= "Children of Satan" then
 						Clockwork.player:SetRecognises(v, player, false);
 					end
@@ -1176,6 +1175,6 @@ end)
 
 netstream.Hook("SaveRitualBinds", function(player, data)
 	if data and istable(data) then
-		player:SetCharacterData("BoundRituals", data);
+		player:SetCharacterData("BoundRitualsNew", data);
 	end
 end)
