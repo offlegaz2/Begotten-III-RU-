@@ -2304,7 +2304,7 @@ function GM:HUDDrawTargetID()
 					if (player and Clockwork.Client != player) then
 						if (Clockwork.plugin:Call("ShouldDrawPlayerTargetID", player)) then
 							if (!Clockwork.player:IsNoClipping(player)) then
-								--[[if (Clockwork.nextCheckRecognises and Clockwork.nextCheckRecognises[2] != player) then
+								--[[if (Clockwork.lastRecognizeCheckedPlayer and Clockwork.lastRecognizeCheckedPlayer != player)) then
 									Clockwork.Client:SetNetVar("TargetKnows", true)
 								end]]--
 								
@@ -2452,10 +2452,15 @@ function GM:HUDDrawTargetID()
 									y = Clockwork.kernel:DrawInfo("Press <X> to inspect this character.", x, y, colorWhite, alpha)
 								end
 								
-								if (!Clockwork.nextCheckRecognises or curTime >= Clockwork.nextCheckRecognises[1] or Clockwork.nextCheckRecognises[2] != player) then
+								local playerSteamID64 = player:SteamID64()
+								local nextCheckRecognises = Clockwork.nextCheckRecognises[playerSteamID64]
+
+								if (!nextCheckRecognises or curTime >= nextCheckRecognises) then
 									Clockwork.datastream:Start("GetTargetRecognises", player)
-									
+
 									Clockwork.nextCheckRecognises = {curTime + 2, player}
+									Clockwork.nextCheckRecognises[playerSteamID64] = curTime + 2
+									Clockwork.lastRecognizeCheckedPlayer = player
 								end
 							end
 						end
