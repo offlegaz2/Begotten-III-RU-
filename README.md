@@ -8,6 +8,9 @@
 
 Begotten III is licenced under [Creative Commons Attribution-NonCommercial 4.0 International](https://creativecommons.org/licenses/by-nc/4.0/deed.en), so you may not use it for commercial purposes.
 
+# Updates
+If the base repo gets updated and I don't merge commits from it here, you can contact me via discord. My ID is <i>'offlegaz'</i>
+
 ## Content
 
 <b>[Begotten III Addon Collection](https://steamcommunity.com/workshop/filedetails/?id=2443075973)</b>
