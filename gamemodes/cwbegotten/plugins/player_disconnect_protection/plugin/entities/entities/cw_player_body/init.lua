@@ -566,7 +566,7 @@ function ENT:OnTakeDamage(damageInfo)
 	ragdoll:Spawn()
 
 	ragdoll:SetNWEntity("Player", game.GetWorld())
-	ragdoll:SetNWString("clothes", self:GetClothes()) -- TODO: Change to SetNW2String
+	ragdoll:SetNW2String("clothes", self:GetClothes())
 	if ((self.characterBounty or 0) > 0) then
 		ragdoll:SetNWInt("bountyKey", self.characterKey)
 	end
