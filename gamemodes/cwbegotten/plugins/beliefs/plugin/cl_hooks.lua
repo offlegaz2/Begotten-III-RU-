@@ -143,7 +143,7 @@ function cwBeliefs:AddEntityOutlines(outlines)
 		local hasAssassin = self:HasBelief("assassin");
 		local hasDarkness = self:HasBelief("embrace_the_darkness");
 		local isCOS = (localPlayer:GetFaction() == "Children of Satan");
-		
+
 		for _, v in _player.Iterator() do
 			if v ~= localPlayer and v:HasInitialized() and v:Alive() and v:GetColor().a > 0 then
 				if isCOS or hasDarkness then
@@ -154,7 +154,11 @@ function cwBeliefs:AddEntityOutlines(outlines)
 							continue;
 						end
 					end
-					
+
+					if (v:GetSharedVar("whiteBanner")) then
+						self:DrawPlayerOutline(v, outlines, color_white)
+					end
+
 					if isCOS then
 						if v:GetNetVar("kinisgerOverride") then
 							if (v:GetPos():DistToSqr(playerPos) <= assassinDist) then
@@ -181,6 +185,12 @@ function cwBeliefs:AddEntityOutlines(outlines)
 				end
 			end;
 		end;
+	else
+		for i, v in ipairs(_player.GetAll()) do
+			if (v:GetSharedVar("whiteBanner")) then
+				self:DrawPlayerOutline(v, outlines, color_white)
+			end
+		end
 	end
 	
 	if self.upgradedWarcryActive then

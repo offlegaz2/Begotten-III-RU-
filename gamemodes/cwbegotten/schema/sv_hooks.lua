@@ -3520,6 +3520,8 @@ function Schema:ActionStopped(player, action)
 			
 			player.ladderConstructing = nil;
 		end
+	elseif action == "helljaunting" then
+		player.teleporting = false
 	elseif action == "reloading" then
 		if player.itemUsing and IsValid(player.itemUsing) then
 			player.itemUsing.beingUsed = false;

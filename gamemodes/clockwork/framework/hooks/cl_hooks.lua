@@ -2511,6 +2511,7 @@ function GM:AddNotify(text, class, length)
 end
 
 -- Called when the target ID HUD should be drawn.
+Clockwork.nextCheckRecognises = Clockwork.nextCheckRecognises or {}
 function GM:HUDDrawTargetID()
 	if (IsValid(Clockwork.Client) and Clockwork.Client:Alive() and !IsValid(Clockwork.EntityMenu)) then
 		if (!Clockwork.Client:IsRagdolled(RAGDOLL_FALLENOVER)) then
@@ -2592,7 +2593,7 @@ function GM:HUDDrawTargetID()
 					if (player and Clockwork.Client != player) then
 						if (Clockwork.plugin:Call("ShouldDrawPlayerTargetID", player)) then
 							if (!Clockwork.player:IsNoClipping(player)) then
-								--[[if (Clockwork.nextCheckRecognises and Clockwork.nextCheckRecognises[2] != player) then
+								--[[if (Clockwork.lastRecognizeCheckedPlayer and Clockwork.lastRecognizeCheckedPlayer != player)) then
 									Clockwork.Client:SetNetVar("TargetKnows", true)
 								end]]--
 								
@@ -2739,11 +2740,16 @@ function GM:HUDDrawTargetID()
 									y = Clockwork.kernel:DrawInfo("Press <"..key:upper().."> to inspect this character.", x, y, colorWhite, alpha)
 								end
 								
-								--[[if (!Clockwork.nextCheckRecognises or curTime >= Clockwork.nextCheckRecognises[1] or Clockwork.nextCheckRecognises[2] != player) then
-									netstream.Start("GetTargetRecognises", player)
-									
+								local playerSteamID64 = player:SteamID64()
+								local nextCheckRecognises = Clockwork.nextCheckRecognises[playerSteamID64]
+
+								if (!nextCheckRecognises or curTime >= nextCheckRecognises) then
+									Clockwork.datastream:Start("GetTargetRecognises", player)
+
 									Clockwork.nextCheckRecognises = {curTime + 2, player}
-								end]]--
+									Clockwork.nextCheckRecognises[playerSteamID64] = curTime + 2
+									Clockwork.lastRecognizeCheckedPlayer = player
+								end
 							end
 						end
 					--[[elseif (Clockwork.generator and Clockwork.generator:FindByID(class)) then

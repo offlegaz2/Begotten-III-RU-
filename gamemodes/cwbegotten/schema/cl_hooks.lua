@@ -34,6 +34,52 @@ if !Schema.contentVerified then
 	Schema.contentVerified = "unverified";
 end
 
+local function PreRender(schema)
+	if (Clockwork.Client.dueling or Clockwork.Client:IsRagdolled() or Clockwork.kernel:IsChoosingCharacter() or
+		!zones:Enabled() or !zones:FogEnabled()) then
+		return
+	end
+
+	schema.oldClip = render.EnableClipping(true)
+
+	local forward = Clockwork.Client:GetForward()
+	local normal = forward * -1
+	local distance = normal:Dot(Clockwork.Client:GetPos() + forward * zones.currentFogEnd)
+
+	render.PushCustomClipPlane(normal, distance)
+end
+
+local function PostRender(schema)
+	if (schema.oldClip != nil) then
+		render.PopCustomClipPlane()
+		render.EnableClipping(schema.oldClip)
+		schema.oldClip = nil
+	end
+end
+
+function Schema:PreDrawOpaqueRenderables()
+	PreRender(self)
+end
+
+function Schema:PostDrawOpaqueRenderables()
+	PostRender(self)
+end
+
+function Schema:PreDrawTranslucentRenderables()
+	PreRender(self)
+end
+
+function Schema:PostDrawTranslucentRenderables()
+	PostRender(self)
+end
+
+function Schema:PrePlayerDraw(client)
+	if (!Clockwork.Client:GetNWBool("hasThermal") and
+		Clockwork.Client:GetPos():DistToSqr(client:GetPos()) > zones.currentFogEnd * zones.currentFogEnd) then
+		return true
+	end
+end
+
 function Schema:Initialize()
 	if (!file.Exists("b3", "DATA")) then
 		file.CreateDir("b3")
@@ -681,7 +727,7 @@ function Schema:GetProgressBarInfoAction(action, percentage)
 		return {text = "You are erecting a siege ladder. Click to cancel.", percentage = percentage, flash = percentage > 75};
 	elseif (action == "bloodTest") then
 		return {text = "You are testing someone's blood for corruption. Click to cancel.", percentage = percentage, flash = percentage > 75};
-	elseif (action == "hell_teleporting") then
+	elseif (action == "hell_teleport") then
 		return {text = "You are using dark magic to teleport to Hell. Click to cancel.", percentage = percentage, flash = percentage < 10};
 	elseif (action == "filling_bucket") then
 		return {text = "You are filling a bucket. Click to cancel.", percentage = percentage, flash = percentage < 10};
@@ -691,6 +737,8 @@ function Schema:GetProgressBarInfoAction(action, percentage)
 		return {text = "You are tying someone up.", percentage = percentage, flash = percentage < 10};
 	elseif (action == "untie") then
 		return {text = "You are untying someone.", percentage = percentage, flash = percentage < 10};
+	elseif (action == "helljaunting") then
+		return {text = "You are helljaunting away. Click to cancel.", percentage = percentage, flash = percentage < 10};
 	end;
 end;
 

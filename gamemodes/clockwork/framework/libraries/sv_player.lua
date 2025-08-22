@@ -287,11 +287,12 @@ function Clockwork.player:CreateCharacterFromData(player, data)
 	if (!factionTable.GetName) then
 		if (!factionTable.useFullName) then
 			if (data.forename and data.surname) then
-				data.forename = string.gsub(data.forename, "^.", string.upper)
-				data.surname = string.gsub(data.surname, "^.", string.upper)
+				-- ^. pattern only detects ASCII characters
+				data.forename = string.utf8upper(data.forename:utf8sub(1, 1)) .. data.forename:utf8sub(2)
+				data.surname = string.utf8upper(data.surname:utf8sub(1, 1)) .. data.surname:utf8sub(2)
 				
-				local forename = string.lower(data.forename);
-				local surname = string.lower(data.surname);
+				local forename = string.utf8lower(data.forename);
+				local surname = string.utf8lower(data.surname);
 
 				if (string.find(data.forename, "[%p%s%d]") or string.find(data.surname, "[%p%s%d]")) then
 					return self:SetCreateFault(
@@ -305,7 +306,7 @@ function Clockwork.player:CreateCharacterFromData(player, data)
 					for k, v in pairs(Schema.Ranks) do
 						for i, v2 in ipairs(v) do
 							if v2 ~= "" then
-								table.insert(blacklistedNames, string.lower(v2));
+								table.insert(blacklistedNames, string.utf8lower(v2));
 							end
 						end
 					end

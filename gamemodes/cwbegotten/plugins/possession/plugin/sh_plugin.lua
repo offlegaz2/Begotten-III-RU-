@@ -303,7 +303,7 @@ function COMMAND:OnRun(player, arguments)
 	local target = Clockwork.player:FindByID(arguments[1]);
 
 	if (target) then
-		local message = string.upper("\""..table.concat(arguments, " ", 2).."\"");
+		local message = string.utf8upper("\""..table.concat(arguments, " ", 2).."\"");
 
 		if target ~= player then
 			Clockwork.chatBox:SetMultiplier(1.25);
@@ -333,7 +333,7 @@ function COMMAND:OnRun(player, arguments)
 	local target = Clockwork.player:FindByID(arguments[1]);
 
 	if (target) then
-		local message = string.upper("\""..table.concat(arguments, " ", 2).."\"");
+		local message = string.utf8upper("\""..table.concat(arguments, " ", 2).."\"");
 
 		if target ~= player then
 			Clockwork.chatBox:SetMultiplier(1.25);
@@ -395,7 +395,7 @@ function COMMAND:OnRun(player, arguments)
 		if (speaker) then
 			if (message) ~= "" then
 				Clockwork.chatBox:Add(target, speaker, "ic", message);
-				Clockwork.chatBox:Add(player, speaker, "ic", "[TO "..string.upper(target:Name()).." FROM "..string.upper(speaker:Name())..": "..message);
+				Clockwork.chatBox:Add(player, speaker, "ic", "[TO "..string.utf8upper(target:Name()).." FROM "..string.utf8upper(speaker:Name())..": "..message);
 			else
 				Schema:EasyText(player, "darkgrey", "["..self.name.."] ".."This is not a valid message!");
 			end
@@ -426,7 +426,7 @@ function COMMAND:OnRun(player, arguments)
 		if (speaker) then
 			if (message) ~= "" then
 				Clockwork.chatBox:Add(target, speaker, "whisper", message);
-				Clockwork.chatBox:Add(player, speaker, "whisper", "[TO "..string.upper(target:Name()).." FROM "..string.upper(speaker:Name())..": "..message);
+				Clockwork.chatBox:Add(player, speaker, "whisper", "[TO "..string.utf8upper(target:Name()).." FROM "..string.utf8upper(speaker:Name())..": "..message);
 			else
 				Schema:EasyText(player, "darkgrey", "["..self.name.."] ".."This is not a valid message!");
 			end
@@ -458,7 +458,7 @@ function COMMAND:OnRun(player, arguments)
 		if (speaker) then
 			if (message) ~= "" then
 				Clockwork.chatBox:Add(target, speaker, "me", message);
-				Clockwork.chatBox:Add(player, speaker, "me", "[TO "..string.upper(target:Name()).." FROM "..string.upper(speaker:Name())..": "..message);
+				Clockwork.chatBox:Add(player, speaker, "me", "[TO "..string.utf8upper(target:Name()).." FROM "..string.utf8upper(speaker:Name())..": "..message);
 			else
 				Schema:EasyText(player, "darkgrey", "["..self.name.."] ".."This is not a valid message!");
 			end
